@@ -1,0 +1,89 @@
+# Development Guidelines
+
+This document outlines coding, architecture, and naming standards for this Next.js project using TypeScript, React 19, and modern tooling.
+
+---
+
+## 🧠 Core Principles
+
+- Prioritize **clarity and readability** over micro-optimizations
+- Favor **declarative and functional patterns**
+- Always write **correct, type-safe, bug-free, secure** code
+- Use modern standards for **React 19**, **Next.js 15 (App Router)**, and **TypeScript**
+
+---
+
+## 📁 Project Structure
+
+- All files must reside under the `src/` directory
+- Directory names must use **kebab-case**  
+  e.g. `src/components/auth-wizard`
+
+---
+
+## 🧩 Component and File Architecture
+
+- Use **React Server Components (RSC)** by default
+- Use **`use client`** only where strictly necessary
+- Favor **file colocation** (e.g. types, helpers, styles near component)
+- Keep component files small and focused (1 component per file)
+
+---
+
+## ✍️ Naming Conventions
+
+- **Booleans**: use auxiliary verbs → `isLoading`, `hasError`, `canSubmit`
+- **Event Handlers**: prefix with `handle` → `handleClick`, `handleSubmit`
+- **State Updaters**: prefix with `set`, `update`, `toggle`
+- **Directories**: use `kebab-case` (e.g. `form-controls`, `auth-wizard`)
+- **Components and Files**: use `PascalCase` → `UserCard.tsx`, `LoginForm.tsx`
+- Prefer **named exports** for components
+
+---
+
+## 🧪 TypeScript Guidelines
+
+- Use TypeScript for **all** code
+- Prefer `interface` for object shapes
+- Use `type` for unions, function types, utility types
+- Avoid `enum`; use `const` maps instead
+- Use `satisfies` to validate inline object literals
+
+const config = {
+  apiBaseUrl: '/api',
+  featureFlag: true,
+} satisfies AppConfig
+
+## ⚛️ React & Next.js Best Practices
+
+- Minimize client state – lift state to server or use async resources
+- Use useActionState for form state management
+- Leverage useFormStatus for loading/submission status
+- Prefer Server Actions over API Routes for form handling
+- Use Suspense + ErrorBoundary where applicable
+- Use async versions of runtime APIs:
+
+const headersList = await headers()
+const cookieStore = await cookies()
+const { isEnabled } = await draftMode()
+
+- In layouts and pages:
+const params = await props.params
+const searchParams = await props.searchParams
+
+## 🧱 UI Tooling
+- Use Shadcn UI components by default
+- Use Radix UI for unstyled primitives
+- Style with Tailwind CSS; avoid inline styles and CSS modules
+- Ensure a11y compliance for all custom UI components
+
+## ✅ Quality Requirements
+- No TODOs or incomplete placeholders
+- All code must be working, testable, and complete
+- Use early returns for readability
+- Avoid deep nesting or imperative control flow
+- Follow DRY principle
+
+## 🧠 Philosophy
+- Build for maintainability, not just delivery.
+- Code should be understandable by another engineer at a glance — even six months from now.

@@ -1,0 +1,14 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Next.js 15の状態管理戦略
+globs: app/**/*
+---
+- 非推奨の`useFormState`の代わりに`useActionState`を使用
+- 新しいプロパティ（data、method、action）を持つ強化版`useFormStatus`を活用
+- URL状態管理には'nuqs'を実装
+- クライアントサイドの状態を最小限に
+- サーバーサイドの状態管理を優先
