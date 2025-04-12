@@ -1,0 +1,15 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Reactコンポーネントの構造と命名規則
+globs: **/*.{tsx,ts}
+---
+- コンポーネントを論理的に構造化：エクスポート、サブコンポーネント、ヘルパー、型
+- 補助動詞を含む説明的な名前を使用（isLoading、hasError）
+- イベントハンドラには「handle」を接頭辞として使用（handleClick、handleSubmit）
+- ディレクトリには小文字とダッシュを使用（components/auth-wizard）
+- コンポーネントには名前付きエクスポートを優先
+- 1ファイル1コンポーネントの原則を守る

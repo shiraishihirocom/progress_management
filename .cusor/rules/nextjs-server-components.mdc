@@ -1,0 +1,16 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: Next.js 15のサーバーコンポーネントとアーキテクチャのルール
+globs: app/**/*
+---
+- React Server Components（RSC）を優先して使用
+- 'use client'ディレクティブを最小限に
+- 適切なエラーバウンダリを実装
+- 非同期操作にはSuspenseを使用
+- パフォーマンスとWeb Vitalsの最適化
+- データフェッチングや状態管理にはサーバーコンポーネントを優先
+- Web APIアクセスは小さなコンポーネントでのみ使用
