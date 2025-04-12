@@ -13,6 +13,17 @@ export default function TeacherDashboard() {
       <main className="flex-1 p-6">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-2xl font-bold mb-6">📋 教員ダッシュボード</h1>
+          
+          {/* デバッグ用直接リンク */}
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+            <h2 className="font-bold text-yellow-800 mb-2">⚠️ デバッグ用リンク</h2>
+            <p className="text-sm text-yellow-700 mb-2">通常のリンクで問題がある場合は、以下のリンクを試してください：</p>
+            <div className="flex gap-2">
+              <a href="/assignments/new" className="text-blue-600 underline">課題作成ページ（直接URL）</a>
+              <span className="text-gray-500">|</span>
+              <Link href="/assignments/new" className="text-blue-600 underline">課題作成ページ（Link）</Link>
+            </div>
+          </div>
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {/* 課題作成 */}

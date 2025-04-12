@@ -7,6 +7,12 @@ export async function middleware(request: NextRequest) {
   const isAuth = !!token
   const path = request.nextUrl.pathname
   
+  // デバッグ情報
+  console.log('Path:', path)
+  console.log('Token:', JSON.stringify(token))
+  console.log('Is Authenticated:', isAuth)
+  console.log('Role:', token?.role)
+  
   // ログインページへのアクセス
   if (path === '/login') {
     // 認証済みユーザーは適切なダッシュボードにリダイレクト
@@ -56,15 +62,28 @@ export async function middleware(request: NextRequest) {
   const protectedTeacherPaths = ["/assignments/new", "/students", "/errors"]
   const protectedStudentPaths = ["/submit", "/assignments"]
   
-  if (protectedTeacherPaths.some(p => path.startsWith(p)) && role !== 'teacher') {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+  // 教員向けページアクセスチェック
+  if (protectedTeacherPaths.some(p => path.startsWith(p))) {
+    console.log('Protected teacher path check:', path)
+    console.log('User role:', role)
+    if (role !== 'teacher') {
+      console.log('Access denied, redirecting to dashboard')
+      return NextResponse.redirect(new URL('/unauthorized', request.url))
+    }
   }
   
-  if (protectedStudentPaths.some(p => path.startsWith(p)) && role !== 'student') {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+  // 学生向けページアクセスチェック
+  if (protectedStudentPaths.some(p => path.startsWith(p) && !path.startsWith("/assignments/new"))) {
+    console.log('Protected student path check:', path)
+    console.log('User role:', role)
+    if (role !== 'student') {
+      console.log('Access denied, redirecting to dashboard')
+      return NextResponse.redirect(new URL('/unauthorized', request.url))
+    }
   }
   
   // デフォルト: アクセスを許可
+  console.log('Access granted')
   return NextResponse.next()
 }
 
