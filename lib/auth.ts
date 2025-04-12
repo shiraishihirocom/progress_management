@@ -3,6 +3,42 @@ import { NextAuthOptions } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import { prisma } from "@/lib/prisma"
 import type { Adapter } from "next-auth/adapters"
+import type { DefaultSession } from "next-auth"
+
+type Role = "TEACHER" | "STUDENT"
+type SessionRole = Lowercase<Role>
+
+declare module "next-auth" {
+  type ExtendedUser = {
+    id: string
+    name?: string | null
+    email?: string | null
+    image?: string | null
+    role: SessionRole
+  }
+
+  type ExtendedSession = {
+    user?: ExtendedUser
+    expires: string
+  }
+
+  interface Session extends ExtendedSession {}
+
+  interface User {
+    id: string
+    name?: string | null
+    email?: string | null
+    image?: string | null
+    role: Role
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    id: string
+    role: SessionRole
+  }
+}
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as Adapter,
@@ -16,32 +52,46 @@ export const authOptions: NextAuthOptions = {
     async session({ session, user }) {
       if (session.user) {
         session.user.id = user.id
-        // 教員メールアドレスの場合
-        if (user.email === process.env.TEACHER_EMAIL) {
-          session.user.role = "teacher"
-        } else {
-          // 学生かどうかを確認
-          const student = await prisma.student.findUnique({
-            where: { email: user.email! },
-          })
-          session.user.role = student ? "student" : undefined
-        }
+        session.user.role = (user.role as Role).toLowerCase() as SessionRole
       }
       return session
     },
     async signIn({ user }) {
-      // 教員メールアドレスの場合は許可
+      // 教員メールアドレスの場合
       if (user.email === process.env.TEACHER_EMAIL) {
+        // ユーザーが存在しない場合は作成
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email! },
+        })
+        
+        if (!existingUser) {
+          await prisma.user.create({
+            data: {
+              email: user.email!,
+              name: user.name,
+              role: "TEACHER",
+            },
+          })
+        }
         return true
       }
 
-      // 学生として登録されているか確認
-      const student = await prisma.student.findUnique({
+      // 学生の場合
+      const existingUser = await prisma.user.findUnique({
         where: { email: user.email! },
       })
 
-      // 学生として登録されていない場合は拒否
-      return !!student
+      if (!existingUser) {
+        // 新規学生として登録
+        await prisma.user.create({
+          data: {
+            email: user.email!,
+            name: user.name,
+            role: "STUDENT",
+          },
+        })
+      }
+      return true
     },
     async redirect({ url, baseUrl }) {
       // ログインページへのリダイレクトを防ぐ

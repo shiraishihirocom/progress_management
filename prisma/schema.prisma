@@ -18,6 +18,8 @@ model User {
   updatedAt     DateTime  @updatedAt
   accounts      Account[]
   sessions      Session[]
+  submissions   Submission[] @relation("UserSubmissions")
+  notifications Notification[] @relation("UserNotifications")
 }
 
 model Account {
@@ -55,24 +57,6 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-model Student {
-  id            String       @id @default(cuid())
-  name          String
-  email         String       @unique
-  studentNumber String?
-  submissions   Submission[]
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-}
-
-model Teacher {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
 model Assignment {
   id          String       @id @default(cuid())
   title       String
@@ -88,7 +72,7 @@ model Submission {
   id            String     @id @default(cuid())
   version       Int
   assignmentId  String
-  studentId     String
+  userId        String
   zipFileUrl    String
   previewImgUrl String?
   score         Int?
@@ -96,20 +80,11 @@ model Submission {
   status        String     @default("SUBMITTED") // SUBMITTED, REVIEWED, ARCHIVED
   reviewedAt    DateTime?
   assignment    Assignment @relation(fields: [assignmentId], references: [id])
-  student       Student    @relation(fields: [studentId], references: [id])
+  user          User       @relation("UserSubmissions", fields: [userId], references: [id])
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 }
 
-model ErrorLog {
-  id            String   @id @default(cuid())
-  assignmentId  String
-  studentId     String
-  message       String
-  createdAt     DateTime @default(now())
-}
-
-// 通知モデルを追加
 model Notification {
   id        String   @id @default(cuid())
   userId    String
@@ -119,19 +94,10 @@ model Notification {
   type      String   @default("info") // info, success, warning, error
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
-
-// 管理者モデルを追加
-model Admin {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  user      User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum Role {
-  ADMIN
   TEACHER
   STUDENT
 }
