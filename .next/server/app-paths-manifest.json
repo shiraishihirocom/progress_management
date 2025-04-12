@@ -1,22 +1,4 @@
 {
-  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
-  "/_not-found/page": "app/_not-found/page.js",
-  "/admin/dashboard/page": "app/admin/dashboard/page.js",
-  "/admin/statistics/page": "app/admin/statistics/page.js",
-  "/admin/users/page": "app/admin/users/page.js",
-  "/assignments/[id]/history/page": "app/assignments/[id]/history/page.js",
-  "/assignments/[id]/review/page": "app/assignments/[id]/review/page.js",
-  "/assignments/[id]/submissions/page": "app/assignments/[id]/submissions/page.js",
-  "/assignments/new/page": "app/assignments/new/page.js",
-  "/dashboard/student/page": "app/dashboard/student/page.js",
-  "/dashboard/teacher/page": "app/dashboard/teacher/page.js",
-  "/errors/[assignmentId]/page": "app/errors/[assignmentId]/page.js",
-  "/notifications/page": "app/notifications/page.js",
   "/page": "app/page.js",
-  "/students/[id]/page": "app/students/[id]/page.js",
-  "/students/new/page": "app/students/new/page.js",
-  "/submit/page": "app/submit/page.js",
-  "/students/page": "app/students/page.js",
-  "/unauthorized/page": "app/unauthorized/page.js",
   "/login/page": "app/login/page.js"
 }

@@ -21,12 +21,12 @@ type Review = {
 
 export default function ReviewPage() {
   const params = useParams()
-  const assignmentId = params.id as string
+  const assignmentId = params?.id as string
 
   // 仮：studentEmail はクエリパラメータ経由で渡される前提
   const searchParams = useSearchParams()
-  const studentEmail = searchParams.get("studentEmail") || ""
-  const studentName = searchParams.get("studentName") || "学生"
+  const studentEmail = searchParams?.get("studentEmail") || ""
+  const studentName = searchParams?.get("studentName") || "学生"
 
   const [score, setScore] = useState(0)
   const [comment, setComment] = useState("")

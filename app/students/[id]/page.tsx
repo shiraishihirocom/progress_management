@@ -11,25 +11,23 @@ import Header from "@/components/header"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ExternalLink } from "lucide-react"
 
-type StudentProfile = {
+interface StudentProfile {
   id: string
   name: string
-  studentNumber: string | null
-  totalSubmissions: number
-  totalAssignments: number
-  averageScore: number | null
-  lastSubmittedAt: string | null
-  submissions: {
-    assignmentId: string
-    assignmentTitle: string
+  email: string
+  studentNumber: string
+  assignments: {
+    id: string
+    title: string
     status: string
-    score: number | null
-    reviewedAt: string | null
+    submittedAt?: string
+    score?: number | null
   }[]
 }
 
 export default function StudentProfilePage() {
-  const { id } = useParams()
+  const params = useParams()
+  const studentId = params?.id as string
   const [data, setData] = useState<StudentProfile | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -40,38 +38,43 @@ export default function StudentProfilePage() {
       setData({
         id: "1",
         name: "山田 太郎",
+        email: "yamada@example.com",
         studentNumber: "123456",
-        totalSubmissions: 3,
-        totalAssignments: 5,
-        averageScore: 72,
-        lastSubmittedAt: "2025-04-03",
-        submissions: [
+        assignments: [
           {
-            assignmentId: "a1",
-            assignmentTitle: "課題1：人体モデリング",
+            id: "a1",
+            title: "課題1：人体モデリング",
             status: "REVIEWED",
             score: 85,
-            reviewedAt: "2025-04-04",
+            submittedAt: "2025-04-04",
           },
           {
-            assignmentId: "a2",
-            assignmentTitle: "課題2：小物モデリング",
+            id: "a2",
+            title: "課題2：小物モデリング",
             status: "REVIEWED",
             score: 72,
-            reviewedAt: "2025-04-02",
+            submittedAt: "2025-04-02",
           },
           {
-            assignmentId: "a3",
-            assignmentTitle: "課題3：背景モデル",
+            id: "a3",
+            title: "課題3：背景モデル",
             status: "NOT_SUBMITTED",
             score: null,
-            reviewedAt: null,
           },
         ],
       })
       setLoading(false)
     }, 1000)
-  }, [id])
+  }, [studentId])
+
+  const getAverageScore = (assignments: StudentProfile["assignments"]) => {
+    const scoredAssignments = assignments.filter((a): a is (typeof a & { score: number }) => 
+      typeof a.score === "number"
+    )
+    if (scoredAssignments.length === 0) return "-"
+    const average = scoredAssignments.reduce((sum, a) => sum + a.score, 0) / scoredAssignments.length
+    return `${Math.round(average)} 点`
+  }
 
   if (loading) {
     return (
@@ -82,17 +85,21 @@ export default function StudentProfilePage() {
             <Skeleton className="h-8 w-64" />
             <Card>
               <CardContent className="p-6">
-                <Skeleton className="h-32 w-full" />
+                <div className="grid grid-cols-3 gap-6">
+                  <Skeleton className="h-20" />
+                  <Skeleton className="h-20" />
+                  <Skeleton className="h-20" />
+                </div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-6">
-                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-64" />
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-6">
-                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-64" />
               </CardContent>
             </Card>
           </div>
@@ -123,28 +130,32 @@ export default function StudentProfilePage() {
 
           {/* 基本情報カード */}
           <Card>
-            <CardContent className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">氏名</p>
-                <p className="font-semibold">{data.name}</p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">学籍番号</p>
-                <p className="font-semibold">{data.studentNumber || "-"}</p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">提出済課題数</p>
-                <p className="font-semibold">
-                  {data.totalSubmissions} / {data.totalAssignments}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">平均スコア</p>
-                <p className="font-semibold">{data.averageScore ?? "-"} 点</p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">最終提出日</p>
-                <p className="font-semibold">{data.lastSubmittedAt ? data.lastSubmittedAt : "-"}</p>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-3 gap-6">
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">氏名</p>
+                  <p className="font-semibold">{data.name}</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">学籍番号</p>
+                  <p className="font-semibold">{data.studentNumber || "-"}</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">提出済課題数</p>
+                  <p className="font-semibold">
+                    {data.assignments.filter((a) => a.status === "REVIEWED").length} / {data.assignments.length}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">平均スコア</p>
+                  <p className="font-semibold">{getAverageScore(data.assignments)}</p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">最終提出日</p>
+                  <p className="font-semibold">
+                    {data.assignments.find((a) => a.status === "REVIEWED")?.submittedAt || "-"}
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -154,14 +165,14 @@ export default function StudentProfilePage() {
             <CardContent className="p-6">
               <h2 className="text-lg font-semibold mb-4">📈 スコア推移グラフ</h2>
               <div className="h-64">
-                {data.submissions.filter((s) => s.score !== null).length > 0 ? (
+                {data.assignments.filter((a) => typeof a.score === "number").length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
-                      data={data.submissions
-                        .filter((s) => s.score !== null)
-                        .map((s) => ({
-                          name: s.assignmentTitle,
-                          score: s.score,
+                      data={data.assignments
+                        .filter((a): a is (typeof a & { score: number }) => typeof a.score === "number")
+                        .map((a) => ({
+                          name: a.title,
+                          score: a.score,
                         }))}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
@@ -197,35 +208,35 @@ export default function StudentProfilePage() {
                     <TableHead>課題名</TableHead>
                     <TableHead>状態</TableHead>
                     <TableHead>スコア</TableHead>
-                    <TableHead>レビュー日</TableHead>
+                    <TableHead>提出日</TableHead>
                     <TableHead>提出一覧</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.submissions.map((item, idx) => (
+                  {data.assignments.map((item, idx) => (
                     <TableRow key={idx}>
-                      <TableCell className="font-medium">{item.assignmentTitle}</TableCell>
+                      <TableCell className="font-medium">{item.title}</TableCell>
                       <TableCell>
                         <Badge
                           variant={
                             item.status === "REVIEWED"
                               ? "default"
-                              : item.status === "REVIEW_WAITING"
-                              ? "secondary"
-                              : "destructive"
+                              : item.status === "NOT_SUBMITTED"
+                              ? "destructive"
+                              : "secondary"
                           }
                         >
-                          {item.status === "NOT_SUBMITTED"
+                          {item.status === "REVIEWED"
+                            ? "レビュー済"
+                            : item.status === "NOT_SUBMITTED"
                             ? "未提出"
-                            : item.status === "REVIEWED"
-                              ? "レビュー済"
-                              : "レビュー待ち"}
+                            : "レビュー待ち"}
                         </Badge>
                       </TableCell>
-                      <TableCell>{item.score ?? "-"}</TableCell>
-                      <TableCell>{item.reviewedAt ? item.reviewedAt : "-"}</TableCell>
+                      <TableCell>{typeof item.score === "number" ? `${item.score} 点` : "-"}</TableCell>
+                      <TableCell>{item.submittedAt || "-"}</TableCell>
                       <TableCell>
-                        <Link href={`/assignments/${item.assignmentId}/submissions`}>
+                        <Link href={`/assignments/${item.id}/submissions`}>
                           <Badge variant="outline" className="cursor-pointer hover:bg-muted flex items-center gap-1">
                             <ExternalLink className="h-3 w-3" /> 開く
                           </Badge>

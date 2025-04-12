@@ -1,7 +1,7 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
-import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
@@ -10,18 +10,19 @@ import { Button } from "@/components/ui/button"
 import Header from "@/components/header"
 import { Skeleton } from "@/components/ui/skeleton"
 
-type SubmissionItem = {
+interface SubmissionItem {
   studentId: string
   studentName: string
   studentEmail: string
   submittedAt?: string
-  score?: number
-  status: "未提出" | "レビュー待ち" | "レビュー済"
+  status: string
+  score: number | null
   previewImageUrl?: string
 }
 
 export default function AssignmentSubmissionsPage() {
-  const { id: assignmentId } = useParams()
+  const params = useParams()
+  const assignmentId = params?.id as string
   const [data, setData] = useState<SubmissionItem[]>([])
   const [assignmentTitle, setAssignmentTitle] = useState("")
   const [loading, setLoading] = useState(true)
@@ -38,6 +39,7 @@ export default function AssignmentSubmissionsPage() {
           studentEmail: "yamada@example.com",
           submittedAt: "2025/04/10",
           status: "レビュー待ち",
+          score: null,
           previewImageUrl: "/placeholder.svg?height=100&width=100",
         },
         {
@@ -45,8 +47,8 @@ export default function AssignmentSubmissionsPage() {
           studentName: "佐藤 花子",
           studentEmail: "sato@example.com",
           submittedAt: "2025/04/08",
-          score: 85,
           status: "レビュー済",
+          score: 85,
           previewImageUrl: "/placeholder.svg?height=100&width=100",
         },
         {
@@ -54,6 +56,7 @@ export default function AssignmentSubmissionsPage() {
           studentName: "鈴木 一郎",
           studentEmail: "suzuki@example.com",
           status: "未提出",
+          score: null,
         },
       ])
       setLoading(false)

@@ -9,41 +9,54 @@ import Header from "@/components/header"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AlertTriangle } from "lucide-react"
 
-type ErrorLog = {
-  message: string
-  count: number
-  lastOccurredAt: string
-  students: { name: string; studentNumber?: string }[]
+interface ErrorLog {
+  id: string
+  studentName: string
+  errorMessage: string
+  occurredAt: string
+  status: string
 }
 
 export default function ErrorSummaryPage() {
   const params = useParams()
-  const assignmentId = params.assignmentId as string
+  const assignmentId = params?.assignmentId as string
   const [errors, setErrors] = useState<ErrorLog[]>([])
   const [loading, setLoading] = useState(true)
   const [assignmentTitle, setAssignmentTitle] = useState("")
 
   useEffect(() => {
-    // 実際のAPIが実装されたら、ここでデ���タを取得する
+    // 実際のAPIが実装されたら、ここでデータを取得する
     // 現在はモックデータを使用
     setTimeout(() => {
       setAssignmentTitle("人体モデリング課題")
       setErrors([
         {
-          message: "workspace.mel が含まれていません",
-          count: 3,
-          lastOccurredAt: "2025-04-03",
-          students: [
-            { name: "山田 太郎", studentNumber: "123456" },
-            { name: "鈴木 花子" },
-            { name: "佐藤 一郎", studentNumber: "789012" },
-          ],
+          id: "1",
+          studentName: "山田 太郎",
+          errorMessage: "workspace.mel が含まれていません",
+          occurredAt: "2025-04-03",
+          status: "未処理"
         },
         {
-          message: "scenes フォルダが見つかりません",
-          count: 2,
-          lastOccurredAt: "2025-04-02",
-          students: [{ name: "高橋 次郎", studentNumber: "345678" }, { name: "田中 三郎" }],
+          id: "2",
+          studentName: "鈴木 花子",
+          errorMessage: "scenes フォルダが見つかりません",
+          occurredAt: "2025-04-02",
+          status: "未処理"
+        },
+        {
+          id: "3",
+          studentName: "高橋 次郎",
+          errorMessage: "workspace.mel が含まれていません",
+          occurredAt: "2025-04-03",
+          status: "未処理"
+        },
+        {
+          id: "4",
+          studentName: "田中 三郎",
+          errorMessage: "scenes フォルダが見つかりません",
+          occurredAt: "2025-04-02",
+          status: "未処理"
         },
       ])
       setLoading(false)
@@ -88,20 +101,12 @@ export default function ErrorSummaryPage() {
                   <TableBody>
                     {errors.map((err, i) => (
                       <TableRow key={i}>
-                        <TableCell className="font-medium">{err.message}</TableCell>
+                        <TableCell className="font-medium">{err.errorMessage}</TableCell>
                         <TableCell>
-                          <Badge variant="destructive">{err.count}件</Badge>
+                          <Badge variant="destructive">{i + 1}件</Badge>
                         </TableCell>
-                        <TableCell>{err.lastOccurredAt}</TableCell>
-                        <TableCell>
-                          <ul className="list-disc pl-4 space-y-1 text-sm">
-                            {err.students.map((s, i) => (
-                              <li key={i}>
-                                {s.name} {s.studentNumber ? `（${s.studentNumber}）` : ""}
-                              </li>
-                            ))}
-                          </ul>
-                        </TableCell>
+                        <TableCell>{err.occurredAt}</TableCell>
+                        <TableCell>{err.studentName}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

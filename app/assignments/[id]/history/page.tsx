@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -11,64 +11,64 @@ import Header from "@/components/header"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Eye } from "lucide-react"
+import { format } from "date-fns"
+import { ja } from "date-fns/locale"
 
-type SubmissionHistory = {
-  version: string
-  submittedAt: string
-  reviewedAt: string | null
-  score: number | null
+interface SubmissionHistory {
+  id: string
+  submittedAt: Date
   status: string
+  score: number | null
+  feedback: string | null
   previewImageUrl?: string
 }
 
 export default function SubmissionHistoryPage() {
-  const { id } = useParams()
+  const params = useParams()
+  const id = params?.id as string
   const [loading, setLoading] = useState(true)
   const [submissionHistory, setSubmissionHistory] = useState<SubmissionHistory[]>([])
   const [assignmentTitle, setAssignmentTitle] = useState("")
 
   useEffect(() => {
-    // 実際のAPIが実装されたら、ここでデータを取得する
-    // 現在はモックデータを使用
-    setTimeout(() => {
-      setAssignmentTitle("人体モデリング課題")
-      setSubmissionHistory([
-        {
-          version: "v1",
-          submittedAt: "2025/04/01",
-          reviewedAt: null,
-          score: null,
-          status: "REVIEW_WAITING",
-          previewImageUrl: "/placeholder.svg?height=300&width=300",
-        },
-        {
-          version: "v2",
-          submittedAt: "2025/04/03",
-          reviewedAt: "2025/04/04",
-          score: 72,
-          status: "REVIEWED",
-          previewImageUrl: "/placeholder.svg?height=300&width=300",
-        },
-        {
-          version: "v3",
-          submittedAt: "2025/04/05",
-          reviewedAt: "2025/04/06",
-          score: 85,
-          status: "REVIEWED",
-          previewImageUrl: "/placeholder.svg?height=300&width=300",
-        },
-        {
-          version: "v4",
-          submittedAt: "2025/04/07",
-          reviewedAt: null,
-          score: null,
-          status: "ARCHIVED",
-          previewImageUrl: "/placeholder.svg?height=300&width=300",
-        },
-      ])
-      setLoading(false)
-    }, 1000)
-  }, [id])
+    // TODO: APIから提出履歴を取得
+    setAssignmentTitle("プログラミング基礎 第1回")
+    setSubmissionHistory([
+      {
+        id: "v1",
+        submittedAt: new Date("2025-04-01"),
+        status: "REVIEW_WAITING",
+        score: null,
+        feedback: null,
+        previewImageUrl: "/placeholder.svg?height=300&width=300",
+      },
+      {
+        id: "v2",
+        submittedAt: new Date("2025-04-03"),
+        status: "REVIEWED",
+        score: 72,
+        feedback: null,
+        previewImageUrl: "/placeholder.svg?height=300&width=300",
+      },
+      {
+        id: "v3",
+        submittedAt: new Date("2025-04-05"),
+        status: "REVIEWED",
+        score: 85,
+        feedback: null,
+        previewImageUrl: "/placeholder.svg?height=300&width=300",
+      },
+      {
+        id: "v4",
+        submittedAt: new Date("2025-04-07"),
+        status: "ARCHIVED",
+        score: null,
+        feedback: null,
+        previewImageUrl: "/placeholder.svg?height=300&width=300",
+      },
+    ])
+    setLoading(false)
+  }, [])
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -108,9 +108,20 @@ export default function SubmissionHistoryPage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={scoredSubmissions}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="version" />
+                      <XAxis
+                        dataKey="id"
+                        tickFormatter={(str) => {
+                          const date = new Date(str)
+                          return format(date, "MMM d", { locale: ja })
+                        }}
+                      />
                       <YAxis domain={[0, 100]} />
-                      <Tooltip />
+                      <Tooltip
+                        labelFormatter={(value) => {
+                          const date = new Date(value)
+                          return format(date, "MMM d, yyyy", { locale: ja })
+                        }}
+                      />
                       <Line
                         type="monotone"
                         dataKey="score"
@@ -147,7 +158,6 @@ export default function SubmissionHistoryPage() {
                       <TableHead>バージョン</TableHead>
                       <TableHead>状態</TableHead>
                       <TableHead>提出日時</TableHead>
-                      <TableHead>レビュー日時</TableHead>
                       <TableHead>スコア</TableHead>
                       <TableHead>操作</TableHead>
                     </TableRow>
@@ -155,10 +165,9 @@ export default function SubmissionHistoryPage() {
                   <TableBody>
                     {submissionHistory.map((item, idx) => (
                       <TableRow key={idx}>
-                        <TableCell className="font-medium">{item.version}</TableCell>
+                        <TableCell className="font-medium">{item.id}</TableCell>
                         <TableCell>{getStatusBadge(item.status)}</TableCell>
-                        <TableCell>{item.submittedAt}</TableCell>
-                        <TableCell>{item.reviewedAt || "未レビュー"}</TableCell>
+                        <TableCell>{format(item.submittedAt, "MMM d, yyyy", { locale: ja })}</TableCell>
                         <TableCell>{item.score !== null ? `${item.score} 点` : "-"}</TableCell>
                         <TableCell>
                           <Dialog>
@@ -169,12 +178,12 @@ export default function SubmissionHistoryPage() {
                             </DialogTrigger>
                             <DialogContent className="max-w-md">
                               <DialogHeader>
-                                <DialogTitle>{item.version} プレビュー</DialogTitle>
+                                <DialogTitle>{item.id} プレビュー</DialogTitle>
                               </DialogHeader>
                               <div className="mt-2">
                                 <img
-                                  src={item.previewImageUrl || "/placeholder.svg"}
-                                  alt={`${item.version} プレビュー`}
+                                  src={item.previewImageUrl}
+                                  alt={`${item.id} プレビュー`}
                                   className="w-full rounded-md border"
                                 />
                               </div>
