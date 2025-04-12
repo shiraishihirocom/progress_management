@@ -7,7 +7,10 @@ export function LoginButton() {
   return (
     <Button 
       className="w-full" 
-      onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+      onClick={() => signIn("google", { 
+        callbackUrl: `${window.location.origin}/dashboard`,
+        redirect: true
+      })}
     >
       Googleでログイン
     </Button>

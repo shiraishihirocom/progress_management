@@ -43,9 +43,21 @@ export const authOptions: NextAuthOptions = {
       // 学生として登録されていない場合は拒否
       return !!student
     },
+    async redirect({ url, baseUrl }) {
+      // 相対URLの場合はbaseUrlと結合
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`
+      }
+      // 同じオリジンのURLの場合はそのまま返す
+      else if (url.startsWith(baseUrl)) {
+        return url
+      }
+      // それ以外の場合はbaseUrlにリダイレクト
+      return baseUrl
+    },
   },
   pages: {
-    signIn: "/auth/signin",
+    signIn: "/login",
     error: "/auth/error",
   },
 }
