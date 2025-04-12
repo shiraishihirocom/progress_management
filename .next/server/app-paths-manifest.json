@@ -1,4 +1,20 @@
 {
+  "/_not-found": "app/_not-found.js",
+  "/dashboard/student/page": "app/dashboard/student/page.js",
+  "/assignments/[id]/review/page": "app/assignments/[id]/review/page.js",
+  "/assignments/[id]/history/page": "app/assignments/[id]/history/page.js",
+  "/assignments/[id]/submissions/page": "app/assignments/[id]/submissions/page.js",
+  "/assignments/new/page": "app/assignments/new/page.js",
+  "/dashboard/teacher/page": "app/dashboard/teacher/page.js",
+  "/dashboard/teacher/statistics/page": "app/dashboard/teacher/statistics/page.js",
+  "/dashboard/teacher/users/page": "app/dashboard/teacher/users/page.js",
+  "/errors/[assignmentId]/page": "app/errors/[assignmentId]/page.js",
+  "/notifications/page": "app/notifications/page.js",
   "/page": "app/page.js",
+  "/students/[id]/page": "app/students/[id]/page.js",
+  "/students/new/page": "app/students/new/page.js",
+  "/students/page": "app/students/page.js",
+  "/submit/page": "app/submit/page.js",
+  "/unauthorized/page": "app/unauthorized/page.js",
   "/login/page": "app/login/page.js"
 }

@@ -2,43 +2,11 @@ import { PrismaAdapter } from "@auth/prisma-adapter"
 import { NextAuthOptions } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import { prisma } from "@/lib/prisma"
+import { Prisma } from "@prisma/client"
 import type { Adapter } from "next-auth/adapters"
-import type { DefaultSession } from "next-auth"
 
 type Role = "TEACHER" | "STUDENT"
-type SessionRole = Lowercase<Role>
-
-declare module "next-auth" {
-  type ExtendedUser = {
-    id: string
-    name?: string | null
-    email?: string | null
-    image?: string | null
-    role: SessionRole
-  }
-
-  type ExtendedSession = {
-    user?: ExtendedUser
-    expires: string
-  }
-
-  interface Session extends ExtendedSession {}
-
-  interface User {
-    id: string
-    name?: string | null
-    email?: string | null
-    image?: string | null
-    role: Role
-  }
-}
-
-declare module "next-auth/jwt" {
-  interface JWT {
-    id: string
-    role: SessionRole
-  }
-}
+type SessionRole = "teacher" | "student"
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as Adapter,
@@ -49,70 +17,112 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async session({ session, user }) {
-      if (session.user) {
+    async signIn({ user, account, profile }) {
+      if (!user.email) return false
+
+      try {
+        // 既存のユーザーを検索
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email },
+          include: { accounts: true }
+        })
+
+        // 既存のユーザーが存在する場合
+        if (existingUser) {
+          // アカウントが既に存在する場合は、そのまま通過
+          const existingAccount = await prisma.account.findFirst({
+            where: {
+              userId: existingUser.id,
+              provider: account?.provider,
+            },
+          })
+          
+          if (existingAccount) {
+            return true
+          }
+
+          // アカウントが紐付けられていない場合は紐付ける
+          if (account) {
+            await prisma.account.create({
+              data: {
+                userId: existingUser.id,
+                type: account.type,
+                provider: account.provider,
+                providerAccountId: account.providerAccountId,
+                access_token: account.access_token,
+                token_type: account.token_type,
+                scope: account.scope,
+                id_token: account.id_token,
+              }
+            })
+          }
+          return true
+        }
+
+        // 新規ユーザーの場合
+        const role = user.email === process.env.TEACHER_EMAIL ? "TEACHER" : "STUDENT"
+        
+        // トランザクションを使用して、ユーザーとアカウントを同時に作成
+        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+          const newUser = await tx.user.create({
+            data: {
+              email: user.email,
+              name: user.name,
+              role: role,
+            },
+          })
+
+          if (account) {
+            await tx.account.create({
+              data: {
+                userId: newUser.id,
+                type: account.type,
+                provider: account.provider,
+                providerAccountId: account.providerAccountId,
+                access_token: account.access_token,
+                token_type: account.token_type,
+                scope: account.scope,
+                id_token: account.id_token,
+              }
+            })
+          }
+        })
+
+        return true
+      } catch (error) {
+        console.error('SignIn error:', error)
+        return false
+      }
+    },
+    async session({ session, user, token }) {
+      if (session.user && user) {
         session.user.id = user.id
         session.user.role = (user.role as Role).toLowerCase() as SessionRole
+      } else if (session.user && token) {
+        session.user.id = token.id as string
+        session.user.role = token.role as SessionRole
       }
       return session
     },
-    async signIn({ user }) {
-      // 教員メールアドレスの場合
-      if (user.email === process.env.TEACHER_EMAIL) {
-        // ユーザーが存在しない場合は作成
-        const existingUser = await prisma.user.findUnique({
-          where: { email: user.email! },
-        })
-        
-        if (!existingUser) {
-          await prisma.user.create({
-            data: {
-              email: user.email!,
-              name: user.name,
-              role: "TEACHER",
-            },
-          })
-        }
-        return true
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id
+        token.role = (user.role as Role).toLowerCase() as SessionRole
       }
-
-      // 学生の場合
-      const existingUser = await prisma.user.findUnique({
-        where: { email: user.email! },
-      })
-
-      if (!existingUser) {
-        // 新規学生として登録
-        await prisma.user.create({
-          data: {
-            email: user.email!,
-            name: user.name,
-            role: "STUDENT",
-          },
-        })
-      }
-      return true
+      return token
     },
     async redirect({ url, baseUrl }) {
-      // ログインページへのリダイレクトを防ぐ
-      if (url.includes('/login')) {
-        return baseUrl
-      }
-      
-      // 相対URLの場合はbaseUrlと結合
-      if (url.startsWith("/")) {
-        return `${baseUrl}${url}`
-      }
-      // 同じオリジンのURLの場合はそのまま返す
-      else if (url.startsWith(baseUrl)) {
-        return url
-      }
-      // それ以外の場合はbaseUrlにリダイレクト
+      if (url.startsWith(baseUrl)) return url
+      if (url.startsWith("/")) return `${baseUrl}${url}`
       return baseUrl
     },
   },
   pages: {
     signIn: "/login",
-    error: "/auth/error",
+    error: "/login",
   },
+  session: {
+    strategy: "jwt",
+  },
+  debug: process.env.NODE_ENV === "development",
 }
