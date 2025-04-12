@@ -10,6 +10,11 @@ const protectedAdminPaths = ["/admin"]
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
+  // ログインページへのアクセスは許可
+  if (pathname === "/login") {
+    return NextResponse.next()
+  }
+
   const token = await getToken({ req })
 
   // ログインしていない
@@ -19,6 +24,17 @@ export async function middleware(req: NextRequest) {
   }
 
   const role = token.role
+
+  // ルートダッシュボードへのアクセスをロールに基づいてリダイレクト
+  if (pathname === "/dashboard") {
+    if (role === "teacher") {
+      return NextResponse.redirect(new URL("/dashboard/teacher", req.url))
+    } else if (role === "student") {
+      return NextResponse.redirect(new URL("/dashboard/student", req.url))
+    } else if (role === "admin") {
+      return NextResponse.redirect(new URL("/admin", req.url))
+    }
+  }
 
   // 管理者ルートに admin 以外が来た場合
   if (protectedAdminPaths.some((path) => pathname.startsWith(path)) && role !== "admin") {
@@ -47,11 +63,12 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    "/dashboard/:path*", // 教員・学生両方
-    "/assignments/:path*", // 学生も教員もアクセス（個別制御）
-    "/students/:path*", // 教員専用
-    "/errors/:path*", // 教員専用
-    "/submit", // 学生専用
-    "/admin/:path*", // 管理者専用
+    "/dashboard/:path*",
+    "/login",
+    "/admin/:path*",
+    "/assignments/:path*",
+    "/students/:path*",
+    "/submit/:path*",
+    "/errors/:path*",
   ],
 }
