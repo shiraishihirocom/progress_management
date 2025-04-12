@@ -5,12 +5,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Header from "@/components/header"
 import { PlusCircle, Users, FileText, AlertTriangle, BarChart3, Settings } from "lucide-react"
-import { useSession } from "next-auth/react"
 
 export default function TeacherDashboard() {
-  const { data: session } = useSession()
-  const isAdmin = session?.user?.role === "ADMIN"
-
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
@@ -83,64 +79,59 @@ export default function TeacherDashboard() {
               </CardContent>
             </Card>
 
-            {/* 管理者機能 */}
-            {isAdmin && (
-              <>
-                {/* システム統計 */}
-                <Card>
-                  <CardContent className="p-6 space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <BarChart3 className="h-5 w-5 text-primary" />
-                      <h2 className="text-lg font-semibold">システム統計</h2>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      システム全体の利用状況や統計情報を確認できます。
-                    </p>
-                    <Link href="/admin/statistics">
-                      <Button className="mt-2 w-full" variant="outline">
-                        統計ページへ
-                      </Button>
-                    </Link>
-                  </CardContent>
-                </Card>
+            {/* システム統計 */}
+            <Card>
+              <CardContent className="p-6 space-y-2">
+                <div className="flex items-center space-x-2">
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                  <h2 className="text-lg font-semibold">システム統計</h2>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  システム全体の利用状況や統計情報を確認できます。
+                </p>
+                <Link href="/dashboard/teacher/statistics">
+                  <Button className="mt-2 w-full" variant="outline">
+                    統計ページへ
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
 
-                {/* ユーザー管理 */}
-                <Card>
-                  <CardContent className="p-6 space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Users className="h-5 w-5 text-primary" />
-                      <h2 className="text-lg font-semibold">ユーザー管理</h2>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      ユーザーの作成、編集、ロール変更を行います。
-                    </p>
-                    <Link href="/admin/users">
-                      <Button className="mt-2 w-full" variant="outline">
-                        ユーザー管理ページへ
-                      </Button>
-                    </Link>
-                  </CardContent>
-                </Card>
+            {/* ユーザー管理 */}
+            <Card>
+              <CardContent className="p-6 space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Users className="h-5 w-5 text-primary" />
+                  <h2 className="text-lg font-semibold">ユーザー管理</h2>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  ユーザーの作成、編集、ロール変更を行います。
+                </p>
+                <Link href="/dashboard/teacher/users">
+                  <Button className="mt-2 w-full" variant="outline">
+                    ユーザー管理ページへ
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
 
-                {/* システム設定 */}
-                <Card>
-                  <CardContent className="p-6 space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Settings className="h-5 w-5 text-primary" />
-                      <h2 className="text-lg font-semibold">システム設定</h2>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      システムの設定や環境設定を管理します。
-                    </p>
-                    <Link href="/admin/settings">
-                      <Button className="mt-2 w-full" variant="outline">
-                        設定ページへ
-                      </Button>
-                    </Link>
-                  </CardContent>
-                </Card>
-              </>
-            )}
+            {/* システム設定 */}
+            <Card>
+              <CardContent className="p-6 space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Settings className="h-5 w-5 text-primary" />
+                  <h2 className="text-lg font-semibold">システム設定</h2>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  システムの設定や環境設定を管理します。
+                </p>
+                <Link href="/dashboard/teacher/settings">
+                  <Button className="mt-2 w-full" variant="outline">
+                    設定ページへ
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </main>

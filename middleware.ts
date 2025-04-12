@@ -6,7 +6,6 @@ import { NextRequestWithAuth, withAuth } from 'next-auth/middleware'
 // 守るべきルートのプレフィックス
 const protectedTeacherPaths = ["/dashboard/teacher", "/assignments/new", "/students", "/errors"]
 const protectedStudentPaths = ["/dashboard/student", "/submit", "/assignments"]
-const protectedAdminPaths = ["/admin"]
 
 export default withAuth(
   async function middleware(req: NextRequestWithAuth) {
@@ -14,7 +13,6 @@ export default withAuth(
     const isAuth = !!token
     const isAuthPage = req.nextUrl.pathname === '/login'
     const isDashboardPage = req.nextUrl.pathname === '/dashboard'
-    const isAdminPage = req.nextUrl.pathname.startsWith('/admin')
     const isTeacherPage = req.nextUrl.pathname.startsWith('/dashboard/teacher')
     const isStudentPage = req.nextUrl.pathname.startsWith('/dashboard/student')
 
@@ -23,11 +21,9 @@ export default withAuth(
       if (isAuth) {
         // 認証済みユーザーは適切なダッシュボードにリダイレクト
         const role = token?.role as string
-        if (role === 'ADMIN') {
-          return NextResponse.redirect(new URL('/admin', req.url))
-        } else if (role === 'TEACHER') {
+        if (role === 'teacher') {
           return NextResponse.redirect(new URL('/dashboard/teacher', req.url))
-        } else if (role === 'STUDENT') {
+        } else if (role === 'student') {
           return NextResponse.redirect(new URL('/dashboard/student', req.url))
         }
       }
@@ -43,27 +39,20 @@ export default withAuth(
 
     // ダッシュボードページへのアクセス
     if (isDashboardPage) {
-      if (role === 'ADMIN') {
-        return NextResponse.redirect(new URL('/admin', req.url))
-      } else if (role === 'TEACHER') {
+      if (role === 'teacher') {
         return NextResponse.redirect(new URL('/dashboard/teacher', req.url))
-      } else if (role === 'STUDENT') {
+      } else if (role === 'student') {
         return NextResponse.redirect(new URL('/dashboard/student', req.url))
       }
     }
 
-    // 管理者ページへのアクセス
-    if (isAdminPage && role !== 'ADMIN') {
-      return NextResponse.redirect(new URL('/dashboard', req.url))
-    }
-
     // 教員ページへのアクセス
-    if (isTeacherPage && role !== 'TEACHER') {
+    if (isTeacherPage && role !== 'teacher') {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }
 
     // 学生ページへのアクセス
-    if (isStudentPage && role !== 'STUDENT') {
+    if (isStudentPage && role !== 'student') {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }
 
@@ -80,7 +69,6 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/login",
-    "/admin/:path*",
     "/assignments/:path*",
     "/students/:path*",
     "/submit/:path*",
