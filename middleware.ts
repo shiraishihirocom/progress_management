@@ -1,69 +1,72 @@
 import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
 import { getToken } from "next-auth/jwt"
-import { NextRequestWithAuth, withAuth } from 'next-auth/middleware'
+import { NextRequest } from "next/server"
 
-// 守るべきルートのプレフィックス
-const protectedTeacherPaths = ["/dashboard/teacher", "/assignments/new", "/students", "/errors"]
-const protectedStudentPaths = ["/dashboard/student", "/submit", "/assignments"]
-
-export default withAuth(
-  async function middleware(req: NextRequestWithAuth) {
-    const token = await getToken({ req })
-    const isAuth = !!token
-    const isAuthPage = req.nextUrl.pathname === '/login'
-    const isDashboardPage = req.nextUrl.pathname === '/dashboard'
-    const isTeacherPage = req.nextUrl.pathname.startsWith('/dashboard/teacher')
-    const isStudentPage = req.nextUrl.pathname.startsWith('/dashboard/student')
-
-    // ログインページへのアクセス
-    if (isAuthPage) {
-      if (isAuth) {
-        // 認証済みユーザーは適切なダッシュボードにリダイレクト
-        const role = token?.role as string
-        if (role === 'teacher') {
-          return NextResponse.redirect(new URL('/dashboard/teacher', req.url))
-        } else if (role === 'student') {
-          return NextResponse.redirect(new URL('/dashboard/student', req.url))
-        }
-      }
-      return NextResponse.next()
-    }
-
-    // 未認証ユーザーの処理
-    if (!isAuth) {
-      return NextResponse.redirect(new URL('/login', req.url))
-    }
-
-    const role = token?.role as string
-
-    // ダッシュボードページへのアクセス
-    if (isDashboardPage) {
+export async function middleware(request: NextRequest) {
+  const token = await getToken({ req: request })
+  const isAuth = !!token
+  const path = request.nextUrl.pathname
+  
+  // ログインページへのアクセス
+  if (path === '/login') {
+    // 認証済みユーザーは適切なダッシュボードにリダイレクト
+    if (isAuth) {
+      const role = token?.role
       if (role === 'teacher') {
-        return NextResponse.redirect(new URL('/dashboard/teacher', req.url))
+        return NextResponse.redirect(new URL('/dashboard/teacher', request.url))
       } else if (role === 'student') {
-        return NextResponse.redirect(new URL('/dashboard/student', req.url))
+        return NextResponse.redirect(new URL('/dashboard/student', request.url))
       }
     }
-
-    // 教員ページへのアクセス
-    if (isTeacherPage && role !== 'teacher') {
-      return NextResponse.redirect(new URL('/dashboard', req.url))
-    }
-
-    // 学生ページへのアクセス
-    if (isStudentPage && role !== 'student') {
-      return NextResponse.redirect(new URL('/dashboard', req.url))
-    }
-
+    // 未認証ユーザーはログインページを表示
     return NextResponse.next()
-  },
-  {
-    callbacks: {
-      authorized: ({ token }) => !!token
-    },
   }
-)
+  
+  // 未認証ユーザーはログインページにリダイレクト
+  if (!isAuth) {
+    // クエリパラメータをクリアしてリダイレクト
+    const loginUrl = new URL('/login', request.url)
+    return NextResponse.redirect(loginUrl)
+  }
+  
+  // 認証済みユーザーの処理
+  const role = token?.role
+  
+  // ダッシュボードページへのアクセス
+  if (path === '/dashboard') {
+    if (role === 'teacher') {
+      return NextResponse.redirect(new URL('/dashboard/teacher', request.url))
+    } else if (role === 'student') {
+      return NextResponse.redirect(new URL('/dashboard/student', request.url))
+    }
+    return NextResponse.next()
+  }
+  
+  // 教員ページへのアクセス
+  if (path.startsWith('/dashboard/teacher') && role !== 'teacher') {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+  
+  // 学生ページへのアクセス
+  if (path.startsWith('/dashboard/student') && role !== 'student') {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+  
+  // その他の保護されたパスへのアクセス
+  const protectedTeacherPaths = ["/assignments/new", "/students", "/errors"]
+  const protectedStudentPaths = ["/submit", "/assignments"]
+  
+  if (protectedTeacherPaths.some(p => path.startsWith(p)) && role !== 'teacher') {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+  
+  if (protectedStudentPaths.some(p => path.startsWith(p)) && role !== 'student') {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+  
+  // デフォルト: アクセスを許可
+  return NextResponse.next()
+}
 
 export const config = {
   matcher: [

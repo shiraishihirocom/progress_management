@@ -44,6 +44,11 @@ export const authOptions: NextAuthOptions = {
       return !!student
     },
     async redirect({ url, baseUrl }) {
+      // ログインページへのリダイレクトを防ぐ
+      if (url.includes('/login')) {
+        return baseUrl
+      }
+      
       // 相対URLの場合はbaseUrlと結合
       if (url.startsWith("/")) {
         return `${baseUrl}${url}`
