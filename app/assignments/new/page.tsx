@@ -33,9 +33,25 @@ export default function AssignmentNewPage() {
     setIsSubmitting(true)
 
     try {
-      // 実際のAPIが実装されたら、ここでデータを送信する
-      // 現在はモック処理
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      // APIエンドポイントに課題データを送信
+      const response = await fetch('/api/assignments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          dueDate,
+          year,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || '課題の登録に失敗しました')
+      }
 
       setSuccess(true)
       setError("")
@@ -49,12 +65,17 @@ export default function AssignmentNewPage() {
       setTitle("")
       setDescription("")
       setDueDate("")
+      
+      // 3秒後にダッシュボードにリダイレクト
+      setTimeout(() => {
+        router.push('/dashboard/teacher')
+      }, 3000)
     } catch (err) {
       console.error(err)
-      setError("エラーが発生しました")
+      setError(err instanceof Error ? err.message : "エラーが発生しました")
       toast({
         title: "エラー",
-        description: "課題の登録に失敗しました。",
+        description: err instanceof Error ? err.message : "課題の登録に失敗しました。",
         variant: "destructive",
       })
     } finally {
@@ -117,7 +138,7 @@ export default function AssignmentNewPage() {
                 <Alert variant="default" className="bg-green-50 border-green-200">
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
                   <AlertTitle>登録完了</AlertTitle>
-                  <AlertDescription>課題が正常に登録されました</AlertDescription>
+                  <AlertDescription>課題が正常に登録されました。数秒後にダッシュボードに戻ります。</AlertDescription>
                 </Alert>
               )}
 

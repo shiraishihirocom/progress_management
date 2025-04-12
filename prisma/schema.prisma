@@ -19,6 +19,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   submissions   Submission[] @relation("UserSubmissions")
+  assignments   Assignment[] @relation("UserAssignments")
   notifications Notification[] @relation("UserNotifications")
 }
 
@@ -63,6 +64,8 @@ model Assignment {
   description String?
   dueDate     DateTime
   year        Int
+  createdById String?
+  createdBy   User?        @relation("UserAssignments", fields: [createdById], references: [id])
   submissions Submission[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
