@@ -73,9 +73,9 @@ export default function SubmissionHistoryPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "REVIEW_WAITING":
-        return <Badge variant="warning">レビュー待ち</Badge>
+        return <Badge variant="secondary">レビュー待ち</Badge>
       case "REVIEWED":
-        return <Badge variant="success">レビュー済</Badge>
+        return <Badge variant="default">レビュー済</Badge>
       case "DRAFT":
         return <Badge variant="destructive">下書き</Badge>
       case "RE_REVIEW_REQUESTED":
