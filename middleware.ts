@@ -1,65 +1,93 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { getToken } from "next-auth/jwt"
+import { NextRequestWithAuth, withAuth } from 'next-auth/middleware'
 
 // 守るべきルートのプレフィックス
 const protectedTeacherPaths = ["/dashboard/teacher", "/assignments/new", "/students", "/errors"]
 const protectedStudentPaths = ["/dashboard/student", "/submit", "/assignments"]
 const protectedAdminPaths = ["/admin"]
 
-export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl
+export default withAuth(
+  async function middleware(req: NextRequestWithAuth) {
+    const token = await getToken({ req })
+    const isAuth = !!token
+    const isAuthPage = req.nextUrl.pathname.startsWith('/login')
+    const isDashboardPage = req.nextUrl.pathname === '/dashboard'
+    const isAdminPage = req.nextUrl.pathname.startsWith('/admin')
+    const isTeacherPage = req.nextUrl.pathname.startsWith('/dashboard/teacher')
+    const isStudentPage = req.nextUrl.pathname.startsWith('/dashboard/student')
 
-  // ログインページへのアクセスは許可
-  if (pathname === "/login") {
-    return NextResponse.next()
-  }
-
-  const token = await getToken({ req })
-
-  // ログインしていない
-  if (!token) {
-    const loginUrl = new URL("/login", req.url)
-    return NextResponse.redirect(loginUrl)
-  }
-
-  const role = token.role
-
-  // ルートダッシュボードへのアクセスをロールに基づいてリダイレクト
-  if (pathname === "/dashboard") {
-    if (role === "teacher") {
-      return NextResponse.redirect(new URL("/dashboard/teacher", req.url))
-    } else if (role === "student") {
-      return NextResponse.redirect(new URL("/dashboard/student", req.url))
-    } else if (role === "admin") {
-      return NextResponse.redirect(new URL("/admin", req.url))
+    // ログインページへのアクセス
+    if (isAuthPage) {
+      if (isAuth) {
+        // 認証済みユーザーは適切なダッシュボードにリダイレクト
+        const role = token?.role as string
+        if (role === 'ADMIN') {
+          return NextResponse.redirect(new URL('/admin', req.url))
+        } else if (role === 'TEACHER') {
+          return NextResponse.redirect(new URL('/dashboard/teacher', req.url))
+        } else if (role === 'STUDENT') {
+          return NextResponse.redirect(new URL('/dashboard/student', req.url))
+        }
+      }
+      return NextResponse.next()
     }
-  }
 
-  // 管理者ルートに admin 以外が来た場合
-  if (protectedAdminPaths.some((path) => pathname.startsWith(path)) && role !== "admin") {
-    const unauthorizedUrl = new URL("/unauthorized", req.url)
-    return NextResponse.redirect(unauthorizedUrl)
-  }
+    // ダッシュボードページへのアクセス
+    if (isDashboardPage) {
+      if (!isAuth) {
+        return NextResponse.redirect(new URL('/login', req.url))
+      }
+      // 認証済みユーザーは適切なダッシュボードにリダイレクト
+      const role = token?.role as string
+      if (role === 'ADMIN') {
+        return NextResponse.redirect(new URL('/admin', req.url))
+      } else if (role === 'TEACHER') {
+        return NextResponse.redirect(new URL('/dashboard/teacher', req.url))
+      } else if (role === 'STUDENT') {
+        return NextResponse.redirect(new URL('/dashboard/student', req.url))
+      }
+    }
 
-  // 教員ルートに student が来た場合
-  if (protectedTeacherPaths.some((path) => pathname.startsWith(path)) && role !== "teacher") {
-    const unauthorizedUrl = new URL("/unauthorized", req.url)
-    return NextResponse.redirect(unauthorizedUrl)
-  }
+    // 管理者ページへのアクセス
+    if (isAdminPage) {
+      if (!isAuth) {
+        return NextResponse.redirect(new URL('/login', req.url))
+      }
+      if (token?.role !== 'ADMIN') {
+        return NextResponse.redirect(new URL('/dashboard', req.url))
+      }
+    }
 
-  // 学生ルートに teacher が来た場合（課題管理以外）
-  if (
-    protectedStudentPaths.some((path) => pathname.startsWith(path)) &&
-    pathname.includes("/dashboard/student") &&
-    role !== "student"
-  ) {
-    const unauthorizedUrl = new URL("/unauthorized", req.url)
-    return NextResponse.redirect(unauthorizedUrl)
-  }
+    // 教員ページへのアクセス
+    if (isTeacherPage) {
+      if (!isAuth) {
+        return NextResponse.redirect(new URL('/login', req.url))
+      }
+      if (token?.role !== 'TEACHER') {
+        return NextResponse.redirect(new URL('/dashboard', req.url))
+      }
+    }
 
-  return NextResponse.next()
-}
+    // 学生ページへのアクセス
+    if (isStudentPage) {
+      if (!isAuth) {
+        return NextResponse.redirect(new URL('/login', req.url))
+      }
+      if (token?.role !== 'STUDENT') {
+        return NextResponse.redirect(new URL('/dashboard', req.url))
+      }
+    }
+
+    return NextResponse.next()
+  },
+  {
+    callbacks: {
+      authorized: ({ token }) => !!token
+    },
+  }
+)
 
 export const config = {
   matcher: [
