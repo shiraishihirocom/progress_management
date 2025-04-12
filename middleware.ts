@@ -12,7 +12,7 @@ export default withAuth(
   async function middleware(req: NextRequestWithAuth) {
     const token = await getToken({ req })
     const isAuth = !!token
-    const isAuthPage = req.nextUrl.pathname.startsWith('/login')
+    const isAuthPage = req.nextUrl.pathname === '/login'
     const isDashboardPage = req.nextUrl.pathname === '/dashboard'
     const isAdminPage = req.nextUrl.pathname.startsWith('/admin')
     const isTeacherPage = req.nextUrl.pathname.startsWith('/dashboard/teacher')
@@ -34,13 +34,15 @@ export default withAuth(
       return NextResponse.next()
     }
 
+    // 未認証ユーザーの処理
+    if (!isAuth) {
+      return NextResponse.redirect(new URL('/login', req.url))
+    }
+
+    const role = token?.role as string
+
     // ダッシュボードページへのアクセス
     if (isDashboardPage) {
-      if (!isAuth) {
-        return NextResponse.redirect(new URL('/login', req.url))
-      }
-      // 認証済みユーザーは適切なダッシュボードにリダイレクト
-      const role = token?.role as string
       if (role === 'ADMIN') {
         return NextResponse.redirect(new URL('/admin', req.url))
       } else if (role === 'TEACHER') {
@@ -51,33 +53,18 @@ export default withAuth(
     }
 
     // 管理者ページへのアクセス
-    if (isAdminPage) {
-      if (!isAuth) {
-        return NextResponse.redirect(new URL('/login', req.url))
-      }
-      if (token?.role !== 'ADMIN') {
-        return NextResponse.redirect(new URL('/dashboard', req.url))
-      }
+    if (isAdminPage && role !== 'ADMIN') {
+      return NextResponse.redirect(new URL('/dashboard', req.url))
     }
 
     // 教員ページへのアクセス
-    if (isTeacherPage) {
-      if (!isAuth) {
-        return NextResponse.redirect(new URL('/login', req.url))
-      }
-      if (token?.role !== 'TEACHER') {
-        return NextResponse.redirect(new URL('/dashboard', req.url))
-      }
+    if (isTeacherPage && role !== 'TEACHER') {
+      return NextResponse.redirect(new URL('/dashboard', req.url))
     }
 
     // 学生ページへのアクセス
-    if (isStudentPage) {
-      if (!isAuth) {
-        return NextResponse.redirect(new URL('/login', req.url))
-      }
-      if (token?.role !== 'STUDENT') {
-        return NextResponse.redirect(new URL('/dashboard', req.url))
-      }
+    if (isStudentPage && role !== 'STUDENT') {
+      return NextResponse.redirect(new URL('/dashboard', req.url))
     }
 
     return NextResponse.next()
