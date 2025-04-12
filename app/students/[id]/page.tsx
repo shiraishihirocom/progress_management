@@ -209,10 +209,10 @@ export default function StudentProfilePage() {
                         <Badge
                           variant={
                             item.status === "REVIEWED"
-                              ? "success"
+                              ? "default"
                               : item.status === "REVIEW_WAITING"
-                                ? "warning"
-                                : "destructive"
+                              ? "secondary"
+                              : "destructive"
                           }
                         >
                           {item.status === "NOT_SUBMITTED"

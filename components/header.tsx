@@ -19,12 +19,12 @@ export default function Header() {
   const router = useRouter()
 
   const navigateToDashboard = () => {
-    if (session?.user?.role === "admin") {
-      router.push("/admin/dashboard")
-    } else if (session?.user?.role === "teacher") {
+    if (session?.user?.role === "teacher") {
       router.push("/dashboard/teacher")
     } else if (session?.user?.role === "student") {
       router.push("/dashboard/student")
+    } else {
+      router.push("/")
     }
   }
 
@@ -51,25 +51,21 @@ export default function Header() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <div className="flex items-center justify-start gap-2 p-2">
-                <div className="flex flex-col space-y-1 leading-none">
-                  {session.user?.name && <p className="font-medium">{session.user.name}</p>}
-                  {session.user?.email && (
-                    <p className="w-[200px] truncate text-sm text-muted-foreground">{session.user.email}</p>
-                  )}
-                </div>
+              <div className="px-2 py-1.5">
+                <p className="text-sm font-medium">{session.user?.name || "ユーザー"}</p>
+                <p className="text-xs text-muted-foreground">{session.user?.email}</p>
               </div>
               <DropdownMenuSeparator />
-              {session.user?.role === "admin" && (
+              {session.user?.role === "teacher" && (
                 <DropdownMenuItem asChild>
-                  <Link href="/admin/dashboard">管理者ダッシュボード</Link>
+                  <Link href="/dashboard/teacher">教員ダッシュボード</Link>
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem asChild>
-                <Link href={session.user?.role === "teacher" ? "/dashboard/teacher" : "/dashboard/student"}>
-                  ダッシュボード
-                </Link>
-              </DropdownMenuItem>
+              {session.user?.role === "student" && (
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/student">生徒ダッシュボード</Link>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem asChild>
                 <Link href="/notifications">通知一覧</Link>
               </DropdownMenuItem>

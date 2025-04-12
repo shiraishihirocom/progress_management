@@ -63,9 +63,9 @@ export default function AssignmentSubmissionsPage() {
   const badgeVariant = (status: string) => {
     switch (status) {
       case "レビュー済":
-        return "success"
+        return "default"
       case "レビュー待ち":
-        return "warning"
+        return "secondary"
       case "未提出":
       default:
         return "destructive"

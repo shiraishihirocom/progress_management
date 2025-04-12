@@ -56,9 +56,9 @@ export default function StudentDashboard() {
   const getBadgeVariant = (status: string) => {
     switch (status) {
       case "完了":
-        return "success"
+        return "default"
       case "レビュー待ち":
-        return "warning"
+        return "secondary"
       case "未提出":
       default:
         return "destructive"
