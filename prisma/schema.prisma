@@ -84,6 +84,31 @@ model Assignment {
   dueDate     DateTime
   year        Int
   
+  // 課題の種類とカテゴリ
+  type        AssignmentType @default(REPORT)
+  category    String?
+  tags        String[]       // タグ情報を配列として保存
+  
+  // 評価基準
+  evaluationCriteria String?  // 評価基準の説明
+  maxScore          Int?      // 最大配点
+  passingScore      Int?      // 合格点
+  
+  // グループ課題情報
+  isGroupAssignment Boolean   @default(false)
+  maxGroupSize      Int?      // 最大グループサイズ
+  minGroupSize      Int?      // 最小グループサイズ
+  
+  // 公開設定
+  isPublic          Boolean   @default(false)
+  publishedAt       DateTime? // 公開日時
+  
+  // 添付ファイル
+  attachments       Attachment[]
+  
+  // ステータス管理
+  status            AssignmentStatus @default(DRAFT)
+  
   // 作成者情報
   createdById String?
   createdBy   User?        @relation("UserAssignments", fields: [createdById], references: [id])
@@ -94,6 +119,23 @@ model Assignment {
   // 監査情報
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+}
+
+// 添付ファイルモデル
+model Attachment {
+  id            String     @id @default(cuid())
+  assignmentId  String
+  fileName      String
+  fileUrl       String
+  fileSize      Int?       // ファイルサイズ（バイト）
+  fileType      String?    // ファイルタイプ（MIMEタイプ）
+  
+  // リレーションシップ
+  assignment    Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  
+  // 監査情報
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 }
 
 model Submission {
@@ -142,6 +184,21 @@ model Notification {
 enum Role {
   TEACHER
   STUDENT
+}
+
+enum AssignmentType {
+  REPORT        // レポート
+  PRESENTATION  // プレゼンテーション
+  TEST          // テスト
+  PROJECT       // プロジェクト
+  OTHER         // その他
+}
+
+enum AssignmentStatus {
+  DRAFT         // 下書き
+  PUBLISHED     // 公開済み
+  CLOSED        // 締切済み
+  ARCHIVED      // アーカイブ済み
 }
 
 enum SubmissionStatus {
