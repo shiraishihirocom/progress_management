@@ -31,22 +31,6 @@ export default function TeacherDashboard() {
               </CardContent>
             </Card>
 
-            {/* 学生登録 */}
-            <Card>
-              <CardContent className="p-6 space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Users className="h-5 w-5 text-primary" />
-                  <h2 className="text-lg font-semibold">学生アカウントを登録</h2>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  学生のメールアドレスを登録することでログインを許可します。
-                </p>
-                <Link href="/students/new">
-                  <Button className="mt-2 w-full">学生登録ページへ</Button>
-                </Link>
-              </CardContent>
-            </Card>
-
             {/* エラー集計 */}
             <Card>
               <CardContent className="p-6 space-y-2">
@@ -105,7 +89,7 @@ export default function TeacherDashboard() {
                   <h2 className="text-lg font-semibold">ユーザー管理</h2>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  ユーザーの作成、編集、ロール変更を行います。
+                  学生・教員のアカウント作成、編集、ロール変更を行います。
                 </p>
                 <Link href="/dashboard/teacher/users">
                   <Button className="mt-2 w-full" variant="outline">
