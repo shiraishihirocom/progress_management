@@ -6,58 +6,33 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { toast } from "sonner"
 import Header from "@/components/header"
 import { FileText } from "lucide-react"
-
-type StudentSummary = {
-  id: string
-  name: string
-  studentNumber?: string
-  totalSubmissions: number
-  totalAssignments: number
-  averageScore: number | null
-  lastSubmittedAt: string | null
-}
+import { getStudents, type StudentSummary } from "@/app/actions/student"
 
 export default function StudentListPage() {
   const [students, setStudents] = useState<StudentSummary[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // 実際のAPIが実装されたら、ここでデータを取得する
-    // 現在はモックデータを使用
-    setTimeout(() => {
-      setStudents([
-        {
-          id: "1",
-          name: "山田 太郎",
-          studentNumber: "123456",
-          totalSubmissions: 3,
-          totalAssignments: 5,
-          averageScore: 72,
-          lastSubmittedAt: "2025-04-02",
-        },
-        {
-          id: "2",
-          name: "佐藤 花子",
-          studentNumber: "789012",
-          totalSubmissions: 4,
-          totalAssignments: 5,
-          averageScore: 85,
-          lastSubmittedAt: "2025-04-03",
-        },
-        {
-          id: "3",
-          name: "鈴木 一郎",
-          studentNumber: "345678",
-          totalSubmissions: 2,
-          totalAssignments: 5,
-          averageScore: 68,
-          lastSubmittedAt: "2025-04-01",
-        },
-      ])
-      setLoading(false)
-    }, 1000)
+    const fetchStudents = async () => {
+      try {
+        const result = await getStudents()
+        if (result.success && result.data) {
+          setStudents(result.data)
+        } else {
+          toast.error(result.error || "学生一覧の取得に失敗しました。")
+        }
+      } catch (error) {
+        console.error("Error fetching students:", error)
+        toast.error("学生一覧の取得に失敗しました。")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStudents()
   }, [])
 
   return (
@@ -96,7 +71,9 @@ export default function StudentListPage() {
                           <TableCell className="font-medium">{s.name}</TableCell>
                           <TableCell>{s.studentNumber || "-"}</TableCell>
                           <TableCell>{`${s.totalSubmissions} / ${s.totalAssignments}`}</TableCell>
-                          <TableCell>{s.averageScore ?? "-"}</TableCell>
+                          <TableCell>
+                            {s.averageScore !== null ? `${Math.round(s.averageScore)}点` : "-"}
+                          </TableCell>
                           <TableCell>{s.lastSubmittedAt ? s.lastSubmittedAt : "-"}</TableCell>
                           <TableCell>
                             <Link href={`/students/${s.id}`}>

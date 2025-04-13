@@ -51,7 +51,7 @@ export default function TeacherDashboard() {
             <Card>
               <CardContent className="p-6 space-y-2">
                 <div className="flex items-center space-x-2">
-                  <FileText className="h-5 w-5 text-primary" />
+                  <Users className="h-5 w-5 text-primary" />
                   <h2 className="text-lg font-semibold">学生一覧と成績確認</h2>
                 </div>
                 <p className="text-sm text-muted-foreground">提出履歴・スコア・進捗を学生ごとに確認できます。</p>
