@@ -1,12 +1,15 @@
 import { prisma } from "@/lib/prisma"
+import { Prisma } from "@prisma/client"
 
-type NotificationType = "info" | "success" | "warning" | "error"
+// NotificationTypeの型定義
+type NotificationType = "INFO" | "SUCCESS" | "WARNING" | "ERROR"
 
+// 定数として列挙型の値を定義
 export async function createNotification({
   userId,
   title,
   message,
-  type = "info",
+  type = "INFO",
 }: {
   userId: string
   title: string
