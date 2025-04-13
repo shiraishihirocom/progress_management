@@ -12,20 +12,15 @@ model User {
   id            String    @id @default(cuid())
   
   // 基本情報
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
+  name          String
+  email         String    @unique
   role          Role      @default(STUDENT)
   
-  // 学生情報 (roleがSTUDENTの場合のみ使用)
+  // 学生情報
+  courseName    String?   @default("未設定") //コース名
+  grade         Int?
+  studentNumber Int?      // 出席番号(任意)
   enrollmentYear Int?     // 入学年度
-  grade         Int?      // 学年
-  studentNumber Int?      // 出席番号（任意）
-  
-  // 監査情報
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
   
   // リレーションシップ
   accounts      Account[]
@@ -33,6 +28,10 @@ model User {
   submissions   Submission[]   @relation("UserSubmissions")
   assignments   Assignment[]   @relation("UserAssignments")
   notifications Notification[] @relation("UserNotifications")
+  
+  // 監査情報
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }
 
 // 認証関連のモデル
@@ -178,6 +177,21 @@ model Notification {
   // 監査情報
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
+}
+
+// システム設定モデル
+model SystemSettings {
+  id                      Int      @id @default(1)
+  systemName              String   @default("課題管理システム")
+  systemDescription       String   @default("3DCG課題の提出・評価を管理するシステム")
+  defaultCourseName       String   @default("未設定")
+  availableGrades         Int[]    @default([1, 2, 3, 4])
+  enableEmailNotifications Boolean @default(true)
+  enableAutoGrading       Boolean @default(false)
+  maxFileSize            Int      @default(50)
+  allowedFileTypes       String[] @default([".blend", ".fbx", ".obj", ".stl"])
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 }
 
 // 列挙型

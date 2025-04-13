@@ -66,8 +66,8 @@ export const authOptions: NextAuthOptions = {
         await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
           const newUser = await tx.user.create({
             data: {
-              email: user.email,
-              name: user.name,
+              email: user.email!,
+              name: user.name || "",
               role: role,
             },
           })

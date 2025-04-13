@@ -1,13 +1,18 @@
 "use server"
-
 import { prisma } from "@/lib/prisma"
-import { Role, AssignmentStatus } from "@prisma/client"
+import { Role } from "@prisma/client"
 
 export type StudentSummary = {
   id: string
   name: string
-  studentNumber?: number
-  grade?: number
+  email: string
+  role: Role
+  enrollmentYear: number | null
+  grade: number | null
+  studentNumber: number | null
+  courseName: string | null
+  createdAt: Date
+  updatedAt: Date
   totalSubmissions: number
   totalAssignments: number
   averageScore: number | null
@@ -19,7 +24,7 @@ export async function getStudents(): Promise<{ success: boolean; data?: StudentS
     // 学生一覧を取得
     const students = await prisma.user.findMany({
       where: {
-        role: Role.STUDENT,
+        role: "STUDENT",
       },
       orderBy: [
         { grade: "asc" },
@@ -28,44 +33,37 @@ export async function getStudents(): Promise<{ success: boolean; data?: StudentS
       select: {
         id: true,
         name: true,
-        studentNumber: true,
+        email: true,
+        role: true,
+        courseName: true,
         grade: true,
-        submissions: {
-          select: {
-            score: true,
-            createdAt: true,
-          },
-        },
+        studentNumber: true,
+        enrollmentYear: true,
+        createdAt: true,
+        updatedAt: true,
       },
     })
 
-    // 課題の総数を取得（公開済みの課題のみ）
-    const totalAssignments = await prisma.assignment.count({
-      where: {
-        status: AssignmentStatus.PUBLISHED,
-      },
-    })
+    // 課題の総数を取得
+    const totalAssignments = await prisma.assignment.count()
 
     // 学生データを整形
     const studentSummaries: StudentSummary[] = students.map((student) => {
-      const submissions = student.submissions || []
-      const scores = submissions.map((s) => s.score).filter((s): s is number => s !== null)
-      const averageScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null
-      const lastSubmittedAt = submissions.length > 0
-        ? submissions.reduce((latest, current) => {
-            return latest.createdAt > current.createdAt ? latest : current
-          }).createdAt.toISOString().split("T")[0]
-        : null
-
       return {
         id: student.id,
-        name: student.name || "未設定",
-        studentNumber: student.studentNumber || undefined,
-        grade: student.grade || undefined,
-        totalSubmissions: submissions.length,
+        name: student.name ?? '',
+        email: student.email ?? '',
+        role: student.role,
+        enrollmentYear: student.enrollmentYear,
+        grade: student.grade,
+        studentNumber: student.studentNumber,
+        courseName: student.courseName,
+        createdAt: student.createdAt,
+        updatedAt: student.updatedAt,
+        totalSubmissions: 0,
         totalAssignments,
-        averageScore,
-        lastSubmittedAt,
+        averageScore: null,
+        lastSubmittedAt: null,
       }
     })
 
