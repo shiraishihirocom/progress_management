@@ -7,6 +7,7 @@ type UserInput = {
   name: string
   email: string
   role: Role
+  courseName: string | null
   enrollmentYear: number | null
   grade: number | null
   studentNumber: number | null
