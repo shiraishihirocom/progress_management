@@ -7,25 +7,35 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ユーザーモデル - システムの中心的なエンティティ
 model User {
   id            String    @id @default(cuid())
+  
+  // 基本情報
   name          String?
   email         String?   @unique
   emailVerified DateTime?
   image         String?
   role          Role      @default(STUDENT)
-  enrollmentYear Int?     // 入学年度（学生のみ）
-  grade         Int?      // 学年（学生のみ）
-  studentNumber Int?      // 出席番号（学生のみ・任意）
+  
+  // 学生情報 (roleがSTUDENTの場合のみ使用)
+  enrollmentYear Int?     // 入学年度
+  grade         Int?      // 学年
+  studentNumber Int?      // 出席番号（任意）
+  
+  // 監査情報
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  
+  // リレーションシップ
   accounts      Account[]
   sessions      Session[]
-  submissions   Submission[] @relation("UserSubmissions")
-  assignments   Assignment[] @relation("UserAssignments")
+  submissions   Submission[]   @relation("UserSubmissions")
+  assignments   Assignment[]   @relation("UserAssignments")
   notifications Notification[] @relation("UserNotifications")
 }
 
+// 認証関連のモデル
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -40,6 +50,7 @@ model Account {
   id_token          String? @db.Text
   session_state     String?
 
+  // リレーションシップ
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
@@ -50,6 +61,8 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
+  
+  // リレーションシップ
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -61,21 +74,32 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+// 課題関連のモデル
 model Assignment {
   id          String       @id @default(cuid())
+  
+  // 基本情報
   title       String
   description String?
   dueDate     DateTime
   year        Int
+  
+  // 作成者情報
   createdById String?
   createdBy   User?        @relation("UserAssignments", fields: [createdById], references: [id])
+  
+  // リレーションシップ
   submissions Submission[]
+  
+  // 監査情報
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 }
 
 model Submission {
-  id            String     @id @default(cuid())
+  id            String           @id @default(cuid())
+  
+  // 基本情報
   version       Int
   assignmentId  String
   userId        String
@@ -83,27 +107,52 @@ model Submission {
   previewImgUrl String?
   score         Int?
   comment       String?
-  status        String     @default("SUBMITTED") // SUBMITTED, REVIEWED, ARCHIVED
+  status        SubmissionStatus @default(SUBMITTED)
   reviewedAt    DateTime?
-  assignment    Assignment @relation(fields: [assignmentId], references: [id])
-  user          User       @relation("UserSubmissions", fields: [userId], references: [id])
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  
+  // リレーションシップ
+  assignment    Assignment       @relation(fields: [assignmentId], references: [id])
+  user          User             @relation("UserSubmissions", fields: [userId], references: [id])
+  
+  // 監査情報
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 }
 
+// 通知関連のモデル
 model Notification {
-  id        String   @id @default(cuid())
+  id        String           @id @default(cuid())
+  
+  // 基本情報
   userId    String
   title     String
   message   String
-  read      Boolean  @default(false)
-  type      String   @default("info") // info, success, warning, error
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  read      Boolean          @default(false)
+  type      NotificationType @default(INFO)
+  
+  // リレーションシップ
+  user      User             @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  
+  // 監査情報
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
 }
 
+// 列挙型
 enum Role {
   TEACHER
   STUDENT
+}
+
+enum SubmissionStatus {
+  SUBMITTED // 提出済み
+  REVIEWED  // レビュー済み
+  ARCHIVED  // アーカイブ済み
+}
+
+enum NotificationType {
+  INFO     // 情報
+  SUCCESS  // 成功
+  WARNING  // 警告
+  ERROR    // エラー
 }
