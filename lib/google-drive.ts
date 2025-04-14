@@ -1,10 +1,21 @@
 import { google } from "googleapis"
 import { Readable } from 'stream';
 
+// サービスアカウントJSONデータの取得
+let serviceAccount;
+try {
+  serviceAccount = process.env.GOOGLE_SERVICE_ACCOUNT 
+    ? JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT) 
+    : null;
+} catch (error) {
+  console.error('サービスアカウントJSONの解析エラー:', error);
+  serviceAccount = null;
+}
+
 // Service Account 認証
 const auth = new google.auth.JWT({
-  email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-  key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+  email: serviceAccount?.client_email || process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+  key: serviceAccount?.private_key || process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
   scopes: ["https://www.googleapis.com/auth/drive"],
 })
 
