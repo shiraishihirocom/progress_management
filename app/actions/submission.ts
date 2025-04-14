@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { SubmissionStatus } from "@prisma/client"
+import { uploadSubmissionToDrive } from "@/lib/google-drive"
 
 // 提出データの型定義
 export type SubmissionDetail = {
@@ -284,6 +285,144 @@ export async function getAssignmentSubmissionHistory(
     return {
       success: false,
       error: "提出履歴の取得に失敗しました",
+    }
+  }
+}
+
+// 課題を提出する
+export async function submitAssignment(
+  assignmentId: string,
+  zipFileUrl: string,
+  previewImgUrl: string | null,
+  isDraft: boolean = false
+): Promise<{
+  success: boolean
+  submissionId?: string
+  error?: string
+  driveInfo?: {
+    folderId: string
+    zipFileId: string
+    previewImageId: string | null
+  }
+}> {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return {
+        success: false,
+        error: "認証されていません",
+      }
+    }
+
+    // 認証されたユーザーのIDを取得
+    const userId = session.user.id
+
+    // ユーザー情報を取得
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        studentNumber: true,
+        grade: true,
+      },
+    })
+
+    if (!user) {
+      return {
+        success: false,
+        error: "ユーザー情報が見つかりません",
+      }
+    }
+
+    // 課題情報を取得
+    const assignment = await prisma.assignment.findUnique({
+      where: { id: assignmentId },
+      select: {
+        id: true,
+        title: true,
+        year: true,
+        dueDate: true,
+      },
+    })
+
+    if (!assignment) {
+      return {
+        success: false,
+        error: "課題が見つかりません",
+      }
+    }
+
+    // 前回の提出を確認して、新しいバージョン番号を設定
+    const previousSubmission = await prisma.submission.findFirst({
+      where: { assignmentId, userId },
+      orderBy: { version: "desc" },
+      select: { version: true },
+    })
+
+    const newVersion = (previousSubmission?.version || 0) + 1
+
+    // Google Driveへのアップロード情報（実際のファイルアップロードは別途クライアント側で行う必要あり）
+    let driveInfo = null
+
+    // システム設定からGoogle DriveのルートフォルダIDを取得
+    const settings = await prisma.systemSettings.findUnique({
+      where: { id: 1 },
+      select: { googleDriveFolderId: true },
+    })
+
+    const rootFolderId = settings?.googleDriveFolderId
+
+    // Google Driveの階層フォルダを作成（rootFolderIdが設定されている場合のみ）
+    // 注意: 実際のファイルのアップロードはクライアント側で行い、URLのみをここで保存
+    if (rootFolderId && user.studentNumber && user.name && user.grade) {
+      /*
+      // 実際のGoogle Driveへのアップロードはここでは行わない
+      // 以下はAPI実装の参考例
+      driveInfo = await uploadSubmissionToDrive(
+        rootFolderId,
+        assignment.year,
+        user.grade,
+        user.studentNumber.toString(),
+        user.name,
+        assignment.title,
+        newVersion,
+        zipFile,
+        previewImage
+      )
+      */
+      
+      // この時点ではURLのみが渡されているので、ファイルIDを記録
+      driveInfo = {
+        folderId: `folder_path_${assignment.year}_${user.grade}_${user.studentNumber}_${assignment.title}_${newVersion}`,
+        zipFileId: zipFileUrl,
+        previewImageId: previewImgUrl
+      }
+    }
+
+    // 提出データを作成
+    const submission = await prisma.submission.create({
+      data: {
+        assignmentId,
+        userId,
+        version: newVersion,
+        zipFileUrl,
+        previewImgUrl: previewImgUrl,
+        status: isDraft ? SubmissionStatus.DRAFT : SubmissionStatus.SUBMITTED,
+        driveFolderId: driveInfo?.folderId,
+      },
+    })
+
+    return {
+      success: true,
+      submissionId: submission.id,
+      driveInfo: driveInfo || undefined,
+    }
+  } catch (error) {
+    console.error("提出エラー:", error)
+    return {
+      success: false,
+      error: "課題の提出に失敗しました",
     }
   }
 } 

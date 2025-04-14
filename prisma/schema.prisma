@@ -25,7 +25,7 @@ model User {
   // リレーションシップ
   accounts      Account[]
   sessions      Session[]
-  submissions   Submission[]   @relation("UserSubmissions")
+  submissions   Submission[]
   assignments   Assignment[]   @relation("UserAssignments")
   notifications Notification[] @relation("UserNotifications")
   
@@ -138,26 +138,25 @@ model Attachment {
 }
 
 model Submission {
-  id            String           @id @default(cuid())
-  
-  // 基本情報
-  version       Int
-  assignmentId  String
-  userId        String
-  zipFileUrl    String
+  id           String    @id @default(cuid())
+  version      Int       @default(1)
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  assignmentId String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  zipFileUrl   String
   previewImgUrl String?
-  score         Int?
-  comment       String?
-  status        SubmissionStatus @default(SUBMITTED)
-  reviewedAt    DateTime?
-  
-  // リレーションシップ
-  assignment    Assignment       @relation(fields: [assignmentId], references: [id])
-  user          User             @relation("UserSubmissions", fields: [userId], references: [id])
-  
-  // 監査情報
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
+  score        Int?
+  comment      String?   @db.Text
+  status       SubmissionStatus @default(DRAFT)
+  reviewedAt   DateTime?
+  driveFolderId String?  // Google Drive上のフォルダID
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([assignmentId])
+  @@index([userId])
+  @@index([status])
 }
 
 // 通知関連のモデル
@@ -181,15 +180,16 @@ model Notification {
 
 // システム設定モデル
 model SystemSettings {
-  id                      Int      @id @default(1)
-  systemName              String   @default("課題管理システム")
-  systemDescription       String   @default("3DCG課題の提出・評価を管理するシステム")
-  defaultCourseName       String   @default("未設定")
-  availableGrades         Int[]    @default([1, 2, 3, 4])
-  enableEmailNotifications Boolean @default(true)
-  enableAutoGrading       Boolean @default(false)
-  maxFileSize            Int      @default(50)
+  id                     Int      @id @default(1)
+  systemName             String   @default("課題管理システム")
+  systemDescription      String   @default("3DCG課題の提出・評価を管理するシステム")
+  defaultCourseName      String   @default("未設定")
+  availableGrades        Int[]    @default([1, 2, 3, 4])
+  enableEmailNotifications Boolean  @default(true)
+  enableAutoGrading      Boolean  @default(false)
+  maxFileSize            Int      @default(50) // MBサイズ
   allowedFileTypes       String[] @default([".blend", ".fbx", ".obj", ".stl"])
+  googleDriveFolderId    String?  // 課題提出用のルートフォルダID
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 }
@@ -216,6 +216,7 @@ enum AssignmentStatus {
 }
 
 enum SubmissionStatus {
+  DRAFT     // 下書き
   SUBMITTED // 提出済み
   REVIEWED  // レビュー済み
   ARCHIVED  // アーカイブ済み
