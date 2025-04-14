@@ -1,4 +1,5 @@
 import { google } from "googleapis"
+import { Readable } from 'stream';
 
 // Service Account 認証
 const auth = new google.auth.JWT({
@@ -7,62 +8,47 @@ const auth = new google.auth.JWT({
   scopes: ["https://www.googleapis.com/auth/drive"],
 })
 
+// Google DriveのルートフォルダID（環境変数から取得）
+export const ROOT_FOLDER_ID = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID || "";
+
 export const drive = google.drive({ version: "v3", auth })
 
-export async function findOrCreateFolder(name: string, parentId: string | null): Promise<string> {
-  const query =
-    `name = '${name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false` +
-    (parentId ? ` and '${parentId}' in parents` : "")
+// フォルダを検索し、存在しなければ作成する
+export async function findOrCreateFolder(parentFolderId: string, folderName: string): Promise<string> {
+  try {
+    // まず既存のフォルダを検索
+    const response = await drive.files.list({
+      q: `name='${folderName}' and '${parentFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+      fields: 'files(id, name)',
+    });
 
-  const res = await drive.files.list({
-    q: query,
-    fields: "files(id, name)",
-    spaces: "drive",
-  })
+    const folders = response.data.files;
+    if (folders && folders.length > 0) {
+      console.log(`フォルダ "${folderName}" が見つかりました: ${folders[0].id}`);
+      return folders[0].id!;
+    }
 
-  const folder = res.data.files?.[0]
-  if (folder?.id) return folder.id
+    // フォルダが見つからない場合は新規作成
+    const fileMetadata = {
+      name: folderName,
+      mimeType: 'application/vnd.google-apps.folder',
+      parents: [parentFolderId],
+    };
 
-  const file = await drive.files.create({
-    requestBody: {
-      name,
-      mimeType: "application/vnd.google-apps.folder",
-      parents: parentId ? [parentId] : undefined,
-    },
-    fields: "id",
-  })
+    const folder = await drive.files.create({
+      requestBody: fileMetadata,
+      fields: 'id',
+    });
 
-  return file.data.id!
+    console.log(`フォルダ "${folderName}" を作成しました: ${folder.data.id}`);
+    return folder.data.id!;
+  } catch (error) {
+    console.error(`フォルダ作成エラー "${folderName}":`, error);
+    throw error;
+  }
 }
 
-export async function uploadFileToDrive(file: File, parentId: string): Promise<string> {
-  const buffer = Buffer.from(await file.arrayBuffer())
-
-  const created = await drive.files.create({
-    requestBody: {
-      name: file.name,
-      parents: [parentId],
-    },
-    media: {
-      mimeType: file.type,
-      body: buffer,
-    },
-    fields: "id",
-  })
-
-  return created.data.id!
-}
-
-/**
- * 学生の課題提出用フォルダ階層を作成・取得する
- * @param rootFolderId ルートフォルダID（教員が指定）
- * @param year 年度（例: 2023）
- * @param grade 学年（例: 1, 2, 3）
- * @param studentInfo 学生情報（例: "01_山田太郎"）
- * @param assignmentName 課題名（例: "キャラクターモデリング"）
- * @param submissionCount 提出回数（例: 1, 2, 3）
- * @returns 作成されたフォルダのID
- */
+// 階層的なフォルダパスを作成し、最終フォルダIDを返す
 export async function getSubmissionFolderPath(
   rootFolderId: string,
   year: number,
@@ -71,86 +57,158 @@ export async function getSubmissionFolderPath(
   assignmentName: string,
   submissionCount: number
 ): Promise<string> {
-  // 年度フォルダを作成または取得
-  const yearFolderName = `${year}年度`;
-  const yearFolderId = await findOrCreateFolder(yearFolderName, rootFolderId);
+  try {
+    // 年度フォルダ
+    const yearFolderName = `${year}年度`;
+    const yearFolderId = await findOrCreateFolder(rootFolderId, yearFolderName);
 
-  // 学年フォルダを作成または取得
-  const gradeFolderName = `${grade}年生`;
-  const gradeFolderId = await findOrCreateFolder(gradeFolderName, yearFolderId);
+    // 学年フォルダ
+    const gradeFolderName = `${grade}年生`;
+    const gradeFolderId = await findOrCreateFolder(yearFolderId, gradeFolderName);
 
-  // 学生フォルダを作成または取得
-  const studentFolderId = await findOrCreateFolder(studentInfo, gradeFolderId);
+    // 学生フォルダ
+    const studentFolderId = await findOrCreateFolder(gradeFolderId, studentInfo);
 
-  // 課題フォルダを作成または取得
-  const assignmentFolderId = await findOrCreateFolder(assignmentName, studentFolderId);
+    // 課題フォルダ
+    const assignmentFolderId = await findOrCreateFolder(studentFolderId, assignmentName);
 
-  // 提出回数フォルダを作成または取得
-  const submissionFolderName = `${submissionCount}回目`;
-  const submissionFolderId = await findOrCreateFolder(submissionFolderName, assignmentFolderId);
+    // 提出回数フォルダ
+    const submissionFolderName = `${submissionCount}回目`;
+    const submissionFolderId = await findOrCreateFolder(assignmentFolderId, submissionFolderName);
 
-  return submissionFolderId;
+    return submissionFolderId;
+  } catch (error) {
+    console.error("フォルダパス作成エラー:", error);
+    throw error;
+  }
 }
 
-/**
- * 学生の課題提出をGoogle Driveに保存する
- * @param rootFolderId ルートフォルダID
- * @param year 年度 
- * @param grade 学年
- * @param studentNumber 出席番号
- * @param studentName 氏名
- * @param assignmentName 課題名
- * @param submissionCount 提出回数
- * @param zipFile 提出ZIPファイル
- * @param previewImage プレビュー画像
- * @returns フォルダID、ファイルID、画像IDを含むオブジェクト
- */
+// ファイルをアップロードする
+export async function uploadFileToDrive(
+  folderId: string,
+  fileName: string,
+  fileContent: Buffer,
+  mimeType: string
+): Promise<string> {
+  try {
+    const fileMetadata = {
+      name: fileName,
+      parents: [folderId]
+    };
+
+    const media = {
+      mimeType: mimeType,
+      body: Readable.from(fileContent)
+    };
+
+    const response = await drive.files.create({
+      requestBody: fileMetadata,
+      media: media,
+      fields: 'id'
+    });
+
+    console.log(`ファイル "${fileName}" をアップロードしました: ${response.data.id}`);
+    return response.data.id!;
+  } catch (error) {
+    console.error(`ファイルアップロードエラー "${fileName}":`, error);
+    throw error;
+  }
+}
+
+// URLからファイルをダウンロードしてGoogle Driveにアップロード
+export async function uploadFileFromUrl(folderId: string, fileName: string, fileUrl: string, mimeType: string): Promise<string> {
+  try {
+    // ファイルをダウンロード
+    const response = await fetch(fileUrl);
+    if (!response.ok) {
+      throw new Error(`ファイルのダウンロードに失敗しました: ${response.statusText}`);
+    }
+    
+    const buffer = await response.arrayBuffer();
+    
+    // ファイルをGoogle Driveにアップロード
+    const fileMetadata = {
+      name: fileName,
+      parents: [folderId]
+    };
+
+    const media = {
+      mimeType: mimeType,
+      body: Readable.from(Buffer.from(buffer))
+    };
+
+    const driveResponse = await drive.files.create({
+      requestBody: fileMetadata,
+      media: media,
+      fields: 'id'
+    });
+
+    console.log(`ファイル "${fileName}" をアップロードしました: ${driveResponse.data.id}`);
+    return driveResponse.data.id!;
+  } catch (error) {
+    console.error(`ファイルアップロードエラー "${fileName}":`, error);
+    throw error;
+  }
+}
+
+// 提出物をGoogle Driveにアップロード
 export async function uploadSubmissionToDrive(
   rootFolderId: string,
   year: number,
   grade: number,
   studentNumber: string,
   studentName: string,
-  assignmentName: string,
-  submissionCount: number,
-  zipFile: File,
-  previewImage: File | null
+  assignmentTitle: string,
+  submissionVersion: number,
+  zipFileUrl: string,
+  previewImageUrl: string | null
 ): Promise<{
   folderId: string;
   zipFileId: string;
   previewImageId: string | null;
 }> {
   try {
-    // 学生情報を整形
-    const paddedNumber = studentNumber.padStart(2, '0');
-    const studentInfo = `${paddedNumber}_${studentName}`;
-
-    // フォルダパスを取得または作成
-    const folderId = await getSubmissionFolderPath(
-      rootFolderId, 
-      year, 
-      grade, 
-      studentInfo, 
-      assignmentName, 
-      submissionCount
-    );
-
-    // ZIPファイルをアップロード
-    const zipFileId = await uploadFileToDrive(zipFile, folderId);
+    // 学生情報を整形（例: "01_山田太郎"）
+    const studentInfo = `${studentNumber}_${studentName}`;
     
-    // プレビュー画像があればアップロード
+    // フォルダ階層を作成
+    const folderId = await getSubmissionFolderPath(
+      rootFolderId,
+      year,
+      grade,
+      studentInfo,
+      assignmentTitle,
+      submissionVersion
+    );
+    
+    // ZIPファイルをアップロード
+    const zipFileName = `submission_v${submissionVersion}.zip`;
+    const zipFileId = await uploadFileFromUrl(
+      folderId,
+      zipFileName,
+      zipFileUrl,
+      'application/zip'
+    );
+    
+    // プレビュー画像をアップロード（存在する場合のみ）
     let previewImageId = null;
-    if (previewImage) {
-      previewImageId = await uploadFileToDrive(previewImage, folderId);
+    if (previewImageUrl) {
+      const previewFileName = `preview_v${submissionVersion}.png`;
+      previewImageId = await uploadFileFromUrl(
+        folderId,
+        previewFileName,
+        previewImageUrl,
+        'image/png'
+      );
     }
-
+    
     return {
       folderId,
       zipFileId,
       previewImageId
     };
   } catch (error) {
-    console.error("Google Driveへのアップロードエラー:", error);
-    throw new Error("ファイルのアップロードに失敗しました");
+    console.error("提出物アップロードエラー:", error);
+    throw error;
   }
 }

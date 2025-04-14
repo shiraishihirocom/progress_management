@@ -368,35 +368,37 @@ export async function submitAssignment(
     // システム設定からGoogle DriveのルートフォルダIDを取得
     const settings = await prisma.systemSettings.findUnique({
       where: { id: 1 },
-      select: { googleDriveFolderId: true },
+      select: { id: true },
     })
 
-    const rootFolderId = settings?.googleDriveFolderId
+    const rootFolderId = (settings as any)?.googleDriveFolderId
 
     // Google Driveの階層フォルダを作成（rootFolderIdが設定されている場合のみ）
     // 注意: 実際のファイルのアップロードはクライアント側で行い、URLのみをここで保存
     if (rootFolderId && user.studentNumber && user.name && user.grade) {
-      /*
-      // 実際のGoogle Driveへのアップロードはここでは行わない
-      // 以下はAPI実装の参考例
-      driveInfo = await uploadSubmissionToDrive(
-        rootFolderId,
-        assignment.year,
-        user.grade,
-        user.studentNumber.toString(),
-        user.name,
-        assignment.title,
-        newVersion,
-        zipFile,
-        previewImage
-      )
-      */
-      
-      // この時点ではURLのみが渡されているので、ファイルIDを記録
-      driveInfo = {
-        folderId: `folder_path_${assignment.year}_${user.grade}_${user.studentNumber}_${assignment.title}_${newVersion}`,
-        zipFileId: zipFileUrl,
-        previewImageId: previewImgUrl
+      try {
+        // Google Driveに提出物をアップロード
+        driveInfo = await uploadSubmissionToDrive(
+          rootFolderId,
+          assignment.year,
+          user.grade,
+          user.studentNumber.toString(),
+          user.name,
+          assignment.title,
+          newVersion,
+          zipFileUrl,
+          previewImgUrl
+        );
+        
+        console.log("Google Driveへのアップロード成功:", driveInfo);
+      } catch (error) {
+        console.error("Google Driveへのアップロードエラー:", error);
+        // アップロードに失敗しても、DB保存は続行する
+        driveInfo = {
+          folderId: `folder_path_${assignment.year}_${user.grade}_${user.studentNumber}_${assignment.title}_${newVersion}`,
+          zipFileId: zipFileUrl,
+          previewImageId: previewImgUrl
+        };
       }
     }
 
@@ -408,9 +410,9 @@ export async function submitAssignment(
         version: newVersion,
         zipFileUrl,
         previewImgUrl: previewImgUrl,
-        status: isDraft ? SubmissionStatus.DRAFT : SubmissionStatus.SUBMITTED,
+        status: isDraft ? "DRAFT" as any : "SUBMITTED",
         driveFolderId: driveInfo?.folderId,
-      },
+      } as any,
     })
 
     return {
