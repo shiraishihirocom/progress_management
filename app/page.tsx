@@ -4,16 +4,26 @@ import { redirect } from "next/navigation"
 import Header from "@/components/header"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { prisma } from "@/lib/prisma"
 
 export default async function Home() {
   const session = await getServerSession(authOptions)
 
   if (session) {
-    if (session.user?.role === "teacher") {
-      redirect("/dashboard/teacher")
-    } else if (session.user?.role === "student") {
-      redirect("/dashboard/student")
+    // ユーザーがログインしている場合、データベースに登録されているか確認
+    const registeredUser = await prisma.user.findUnique({
+      where: { email: session.user?.email ?? "" },
+    })
+
+    // 登録されているユーザーのみダッシュボードにリダイレクト
+    if (registeredUser) {
+      if (registeredUser.role === "TEACHER") {
+        redirect("/dashboard/teacher")
+      } else if (registeredUser.role === "STUDENT") {
+        redirect("/dashboard/student")
+      }
     }
+    // 登録されていない場合はホームページのままになる
   }
 
   return (

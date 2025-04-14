@@ -60,7 +60,8 @@ export async function middleware(request: NextRequest) {
   
   // その他の保護されたパスへのアクセス
   const protectedTeacherPaths = ["/assignments/new", "/students", "/errors"]
-  const protectedStudentPaths = ["/submit", "/assignments"]
+  const protectedStudentPaths = ["/submit"]
+  const sharedPaths = ["/assignments"]
   
   // 教員向けページアクセスチェック
   if (protectedTeacherPaths.some(p => path.startsWith(p))) {
@@ -73,11 +74,21 @@ export async function middleware(request: NextRequest) {
   }
   
   // 学生向けページアクセスチェック
-  if (protectedStudentPaths.some(p => path.startsWith(p) && !path.startsWith("/assignments/new"))) {
+  if (protectedStudentPaths.some(p => path.startsWith(p))) {
     console.log('Protected student path check:', path)
     console.log('User role:', role)
     if (role !== 'student') {
       console.log('Access denied, redirecting to dashboard')
+      return NextResponse.redirect(new URL('/unauthorized', request.url))
+    }
+  }
+  
+  // 共有ページアクセスチェック（教員と学生の両方がアクセス可能）
+  if (sharedPaths.some(p => path.startsWith(p) && !path.startsWith("/assignments/new"))) {
+    console.log('Shared path check:', path)
+    console.log('User role:', role)
+    if (role !== 'teacher' && role !== 'student') {
+      console.log('Access denied for shared path')
       return NextResponse.redirect(new URL('/unauthorized', request.url))
     }
   }

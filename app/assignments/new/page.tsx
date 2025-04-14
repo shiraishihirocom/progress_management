@@ -11,12 +11,17 @@ import Header from "@/components/header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
 import { CheckCircle2 } from "lucide-react"
+import { createAssignment } from "@/app/actions/assignment"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function AssignmentNewPage() {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [dueDate, setDueDate] = useState("")
   const [year, setYear] = useState(new Date().getFullYear())
+  const [type, setType] = useState("REPORT")
+  const [category, setCategory] = useState("")
+  const [status, setStatus] = useState("DRAFT")
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -33,24 +38,21 @@ export default function AssignmentNewPage() {
     setIsSubmitting(true)
 
     try {
-      // APIエンドポイントに課題データを送信
-      const response = await fetch('/api/assignments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title,
-          description,
-          dueDate,
-          year,
-        }),
+      // サーバーアクションを直接呼び出す
+      const result = await createAssignment({
+        title,
+        description,
+        dueDate,
+        year,
+        type: type as any,
+        category: category || undefined,
+        status: status as any,
+        isPublic: status === "PUBLISHED",
+        publishedAt: status === "PUBLISHED" ? new Date() : null,
       })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || '課題の登録に失敗しました')
+      if (!result.success) {
+        throw new Error(result.error || "課題の登録に失敗しました")
       }
 
       setSuccess(true)
@@ -65,6 +67,7 @@ export default function AssignmentNewPage() {
       setTitle("")
       setDescription("")
       setDueDate("")
+      setCategory("")
       
       // 3秒後にダッシュボードにリダイレクト
       setTimeout(() => {
@@ -115,19 +118,62 @@ export default function AssignmentNewPage() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="dueDate">納期（必須）</Label>
-                <Input id="dueDate" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="dueDate">納期（必須）</Label>
+                  <Input id="dueDate" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="year">年度（必須）</Label>
+                  <Input
+                    id="year"
+                    type="number"
+                    value={year}
+                    onChange={(e) => setYear(Number.parseInt(e.target.value, 10))}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="type">課題タイプ</Label>
+                  <Select value={type} onValueChange={setType}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="課題タイプを選択" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="REPORT">レポート</SelectItem>
+                      <SelectItem value="PRESENTATION">プレゼンテーション</SelectItem>
+                      <SelectItem value="TEST">テスト</SelectItem>
+                      <SelectItem value="PROJECT">プロジェクト</SelectItem>
+                      <SelectItem value="OTHER">その他</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="category">カテゴリ（任意）</Label>
+                  <Input
+                    id="category"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    placeholder="例：モデリング"
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="year">年度（必須）</Label>
-                <Input
-                  id="year"
-                  type="number"
-                  value={year}
-                  onChange={(e) => setYear(Number.parseInt(e.target.value, 10))}
-                />
+                <Label htmlFor="status">ステータス</Label>
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="ステータスを選択" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="DRAFT">下書き</SelectItem>
+                    <SelectItem value="PUBLISHED">公開</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <Button onClick={handleSubmit} disabled={isSubmitting} className="w-full">

@@ -4,116 +4,79 @@ import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import Header from "@/components/header"
 import Link from "next/link"
-import { Skeleton } from "@/components/ui/skeleton"
-
-type Assignment = {
-  id: string
-  title: string
-  dueDate: string
-  status: "未提出" | "レビュー待ち" | "完了"
-  score: number | null
-}
+import { FileText, Clock, User, BarChart3 } from "lucide-react"
 
 export default function StudentDashboard() {
   const { data: session } = useSession()
-  const [assignments, setAssignments] = useState<Assignment[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    // 実際のAPIが実装されたら、ここでデータを取得する
-    // 現在はモックデータを使用
-    setTimeout(() => {
-      setAssignments([
-        {
-          id: "1",
-          title: "課題1：人体モデリング",
-          dueDate: "2025/05/10",
-          status: "未提出",
-          score: null,
-        },
-        {
-          id: "2",
-          title: "課題2：小物モデリング",
-          dueDate: "2025/05/17",
-          status: "レビュー待ち",
-          score: null,
-        },
-        {
-          id: "3",
-          title: "課題3：背景モデル",
-          dueDate: "2025/05/24",
-          status: "完了",
-          score: 85,
-        },
-      ])
-      setLoading(false)
-    }, 1000)
-  }, [])
-
-  const getBadgeVariant = (status: string) => {
-    switch (status) {
-      case "完了":
-        return "default"
-      case "レビュー待ち":
-        return "secondary"
-      case "未提出":
-      default:
-        return "destructive"
-    }
-  }
 
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-1 p-6">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-2xl font-bold mb-6">🧭 現在の課題進捗</h1>
+          <h1 className="text-2xl font-bold mb-6">📋 学生ダッシュボード</h1>
+          
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {/* 課題一覧 */}
+            <Card>
+              <CardContent className="p-6 flex flex-col h-[200px]">
+                <div className="flex items-center space-x-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  <h2 className="text-lg font-semibold">課題一覧</h2>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  全ての課題を確認し、詳細や締め切りを確認できます。
+                </p>
+                <div className="mt-auto">
+                  <Link href="/assignments">
+                    <Button className="w-full bg-black text-white hover:bg-gray-800">課題一覧ページへ</Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
 
-          {loading ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {[1, 2, 3].map((i) => (
-                <Card key={i} className="overflow-hidden">
-                  <CardContent className="p-0">
-                    <div className="p-6 space-y-2">
-                      <Skeleton className="h-6 w-3/4" />
-                      <Skeleton className="h-4 w-1/2" />
-                      <Skeleton className="h-5 w-20" />
-                      <div className="pt-2">
-                        <Skeleton className="h-10 w-full" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {assignments.map((assignment) => (
-                <Card key={assignment.id}>
-                  <CardContent className="p-6 space-y-2">
-                    <h2 className="text-lg font-semibold">{assignment.title}</h2>
-                    <p className="text-sm text-muted-foreground">納期: {assignment.dueDate}</p>
-                    <Badge variant={getBadgeVariant(assignment.status)}>{assignment.status}</Badge>
-                    {assignment.score !== null && <p className="text-sm">スコア: {assignment.score} 点</p>}
-                    <div className="pt-2">
-                      {assignment.status === "未提出" ? (
-                        <Button asChild>
-                          <Link href="/submit">提出する</Link>
-                        </Button>
-                      ) : (
-                        <Button variant="secondary" asChild>
-                          <Link href={`/assignments/${assignment.id}/history`}>履歴確認</Link>
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+            {/* 提出履歴 */}
+            <Card>
+              <CardContent className="p-6 flex flex-col h-[200px]">
+                <div className="flex items-center space-x-2">
+                  <Clock className="h-5 w-5 text-primary" />
+                  <h2 className="text-lg font-semibold">提出履歴</h2>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  過去の提出物とフィードバックを確認できます。
+                </p>
+                <div className="mt-auto">
+                  <Link href="/dashboard/student/history">
+                    <Button className="w-full bg-black text-white hover:bg-gray-800" variant="outline">
+                      提出履歴を見る
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* プロフィール設定 */}
+            <Card>
+              <CardContent className="p-6 flex flex-col h-[200px]">
+                <div className="flex items-center space-x-2">
+                  <User className="h-5 w-5 text-primary" />
+                  <h2 className="text-lg font-semibold">プロフィール設定</h2>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  個人情報や通知設定を管理します。
+                </p>
+                <div className="mt-auto">
+                  <Link href="/dashboard/student/profile">
+                    <Button className="w-full bg-black text-white hover:bg-gray-800" variant="outline">
+                      プロフィールを編集
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </main>
     </div>

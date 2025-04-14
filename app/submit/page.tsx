@@ -2,8 +2,8 @@
 
 import type React from "react"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,9 +12,13 @@ import { Label } from "@/components/ui/label"
 import Header from "@/components/header"
 import { Upload, AlertCircle, CheckCircle2 } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
+import Link from "next/link"
 
 export default function SubmitPage() {
-  const [assignmentId, setAssignmentId] = useState("")
+  const searchParams = useSearchParams()
+  const assignmentIdParam = searchParams ? searchParams.get('assignmentId') : null
+  
+  const [assignmentId, setAssignmentId] = useState(assignmentIdParam || "")
   const [zipFile, setZipFile] = useState<File | null>(null)
   const [previewImage, setPreviewImage] = useState<File | null>(null)
   const [message, setMessage] = useState("")
@@ -24,6 +28,13 @@ export default function SubmitPage() {
 
   const router = useRouter()
   const { toast } = useToast()
+
+  // URLパラメータが変更されたらassignmentIdを更新
+  useEffect(() => {
+    if (assignmentIdParam) {
+      setAssignmentId(assignmentIdParam)
+    }
+  }, [assignmentIdParam])
 
   const handleSubmit = async () => {
     if (!assignmentId || !zipFile || !previewImage) {
@@ -46,9 +57,9 @@ export default function SubmitPage() {
         variant: "default",
       })
 
-      // 成功したら履歴ページに遷移する（実際の実装では課題IDを使用）
+      // 成功したら履歴ページに遷移する
       setTimeout(() => {
-        router.push(`/assignments/1/history`)
+        router.push(`/assignments/${assignmentId}/history`)
       }, 1500)
     } catch (error) {
       console.error("提出エラー:", error)
@@ -91,7 +102,14 @@ export default function SubmitPage() {
       <Header />
       <main className="flex-1 p-6">
         <div className="max-w-3xl mx-auto space-y-6">
-          <h1 className="text-2xl font-bold">📤 課題提出画面</h1>
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold">📤 課題提出画面</h1>
+            {assignmentIdParam && (
+              <Link href={`/assignments/${assignmentIdParam}`} className="text-sm text-blue-600 hover:underline">
+                ← 課題ページに戻る
+              </Link>
+            )}
+          </div>
 
           <Card>
             <CardContent className="p-6 space-y-4">
@@ -103,6 +121,7 @@ export default function SubmitPage() {
                   placeholder="例: a1-human-modeling"
                   value={assignmentId}
                   onChange={(e) => setAssignmentId(e.target.value)}
+                  disabled={!!assignmentIdParam}
                 />
               </div>
 

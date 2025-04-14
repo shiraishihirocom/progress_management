@@ -4,7 +4,7 @@ import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import Header from "@/components/header"
-import { PlusCircle, Users, FileText, AlertTriangle, BarChart3, Settings } from "lucide-react"
+import { PlusCircle, Users, FileText, AlertTriangle, BarChart3, Settings, List } from "lucide-react"
 
 export default function TeacherDashboard() {
   return (
@@ -28,6 +28,24 @@ export default function TeacherDashboard() {
                 <div className="mt-auto">
                   <Link href="/assignments/new">
                     <Button className="w-full bg-black text-white hover:bg-gray-800">課題作成ページへ</Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 課題一覧 */}
+            <Card>
+              <CardContent className="p-6 flex flex-col h-[200px]">
+                <div className="flex items-center space-x-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  <h2 className="text-lg font-semibold">課題一覧</h2>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  作成した全ての課題を確認・編集・管理できます。
+                </p>
+                <div className="mt-auto">
+                  <Link href="/assignments">
+                    <Button className="w-full bg-black text-white hover:bg-gray-800">課題一覧ページへ</Button>
                   </Link>
                 </div>
               </CardContent>

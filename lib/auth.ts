@@ -27,7 +27,7 @@ export const authOptions: NextAuthOptions = {
           include: { accounts: true }
         })
 
-        // 既存のユーザーが存在する場合
+        // 既存のユーザーが存在する場合のみログインを許可
         if (existingUser) {
           // アカウントが既に存在する場合は、そのまま通過
           const existingAccount = await prisma.account.findFirst({
@@ -59,39 +59,11 @@ export const authOptions: NextAuthOptions = {
           return true
         }
 
-        // 新規ユーザーの場合
-        const role = user.email === process.env.TEACHER_EMAIL ? "TEACHER" : "STUDENT"
-        
-        // トランザクションを使用して、ユーザーとアカウントを同時に作成
-        await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-          const newUser = await tx.user.create({
-            data: {
-              email: user.email!,
-              name: user.name || "",
-              role: role,
-            },
-          })
-
-          if (account) {
-            await tx.account.create({
-              data: {
-                userId: newUser.id,
-                type: account.type,
-                provider: account.provider,
-                providerAccountId: account.providerAccountId,
-                access_token: account.access_token,
-                token_type: account.token_type,
-                scope: account.scope,
-                id_token: account.id_token,
-              }
-            })
-          }
-        })
-
-        return true
+        // 登録されていないユーザーの場合はログインを拒否
+        return `/login?error=not_registered&email=${encodeURIComponent(user.email)}`
       } catch (error) {
         console.error('SignIn error:', error)
-        return false
+        return `/login?error=database_error`
       }
     },
     async session({ session, user, token }) {
